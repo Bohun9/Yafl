@@ -64,7 +64,8 @@ executable yafl
     -- other-extensions:
 
     -- Other library packages from which modules are imported.
-    build-depends:    base ^>=4.14.3.0
+    build-depends: base ^>=4.14.3.0
+                 , yafl
 
     -- Directories containing source files.
     hs-source-dirs:   app
@@ -79,6 +80,7 @@ library
                  , prettyprinter
                  , text
                  , mtl
+                 , containers
 
     -- Directories containing source files.
     hs-source-dirs:   src
@@ -92,6 +94,8 @@ library
                  , Surface.Parser
                  , Desugared.Syntax
                  , Desugared.Desugar
+                 , Typed.Syntax
+                 , Typed.Typecheck
 
     build-tools-depends: alex
 

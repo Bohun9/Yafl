@@ -1,22 +1,21 @@
 module Common.Node
-  ( Node(..),
+  ( Node (..),
     mkNode,
-    Lexer.AlexPosn(..),
+    Lexer.AlexPosn (..),
   )
-  where
+where
 
-import           Prettyprinter
+import Prettyprinter
 import qualified Surface.Lexer as Lexer
 
-data Node a
-  = Node {
-    pos   :: Lexer.AlexPosn,
+data Node a = Node
+  { pos :: Lexer.AlexPosn,
     value :: a
   }
- deriving (Show)
+  deriving (Show)
 
 mkNode :: Lexer.AlexPosn -> a -> Node a
-mkNode p v = Node { pos = p, value = v }
+mkNode p v = Node {pos = p, value = v}
 
 instance Pretty a => Pretty (Node a) where
-    pretty (Node { value = value }) = pretty value
+  pretty (Node {value = value}) = pretty value

@@ -20,6 +20,7 @@ tokens :-
   "->"            { \p s -> Token p ARROW }
   ","             { \p s -> Token p COMMA }
   "|"             { \p s -> Token p PIPE } 
+  ":"             { \p s -> Token p COLON } 
 
   "let"           { \p s -> Token p LET } 
   "in"            { \p s -> Token p IN } 
@@ -47,6 +48,7 @@ data Token'
   | ARROW
   | COMMA
   | PIPE
+  | COLON
 
   | LET
   | IN

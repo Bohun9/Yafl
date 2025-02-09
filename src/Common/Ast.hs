@@ -9,16 +9,19 @@ data Binop
   deriving (Show)
 
 type TypeDef = Node.Node TypeDef'
+
 data TypeDef'
   = TypeDef Var [Constructor]
   deriving (Show)
 
 type Constructor = Node.Node Constructor'
+
 data Constructor'
   = Constructor Var [Type]
   deriving (Show)
 
 type Type = Node.Node Type'
+
 data Type'
   = TInt
   | TArrow Type Type

@@ -1,0 +1,10 @@
+data list =
+  | Nil
+  | Cons of int * list
+
+let sum (xs : list) : int = 
+  match xs with
+  | Nil -> 0
+  | Cons(x, xs) -> x + sum xs
+in
+sum (Cons(1, (Cons(2, Nil))))
