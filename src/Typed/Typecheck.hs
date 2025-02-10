@@ -116,7 +116,7 @@ typecheckExpr' e p =
         then typeError p "Function return type mismatch"
         else return ()
       (e2', t') <- extendEnv f ft $ typecheckExpr2 e2
-      return $ (T.EFun f x e1' e2', t')
+      return $ (T.EFun f x t1' t2' e1' e2', t')
     D.ECtor c es -> do
       ets <- mapM typecheckExpr2 es
       let (es', ts) = unzip ets

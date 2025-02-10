@@ -96,6 +96,8 @@ library
                  , Desugared.Desugar
                  , Typed.Syntax
                  , Typed.Typecheck
+                 , ANF.Syntax
+                 , ANF.ToANF
 
     build-tools-depends: alex
 

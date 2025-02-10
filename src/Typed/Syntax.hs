@@ -1,4 +1,17 @@
-module Typed.Syntax where
+module Typed.Syntax
+  ( Type (..),
+    CtorInfo (..),
+    TypeInfo (..),
+    Annot (..),
+    Expr (..),
+    Expr' (..),
+    Clause (..),
+    Pattern (..),
+    Program (..),
+    Ast.Var (..),
+    Ast.Binop (..),
+  )
+where
 
 import qualified Common.Ast as Ast
 import qualified Data.Map as Map
@@ -37,7 +50,7 @@ data Expr'
   | EBinop Ast.Binop Expr Expr
   | ELet Ast.Var Expr Expr
   | EApp Expr Expr
-  | EFun Ast.Var Ast.Var Expr Expr
+  | EFun Ast.Var Ast.Var Type Type Expr Expr
   | ECtor Ast.Var [Expr]
   | ECase Expr [Clause]
   | EPatternMatchingSeq Expr Expr
