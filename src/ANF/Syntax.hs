@@ -19,6 +19,7 @@ data Type
 data Value
   = VInt Int
   | VVar Ast.Var
+  | VFun Ast.Var Ast.Var Type Type Expr
   deriving (Show)
 
 data Expr
@@ -26,7 +27,6 @@ data Expr
   | ELet Ast.Var Type Expr Expr
   | EBinop Ast.Binop Value Value
   | EApp Value Value
-  | EFun Ast.Var Ast.Var Type Type Expr Expr
   | ESwitch Value [Expr]
   | EPatternMatchingSeq Expr Expr
   | EPatternMatchingError

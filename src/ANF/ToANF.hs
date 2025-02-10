@@ -37,6 +37,10 @@ toANFType T.TInt = A.TInt
 toANFType (T.TArrow t1 t2) = A.TArrow (toANFType t1) (toANFType t2)
 toANFType (T.TAdt _) = A.TStructPointer [A.TInt]
 
+buildExpr :: [(A.Var, A.Type, A.Expr)] -> A.Expr -> A.Expr
+buildExpr defs e =
+  foldr (\(x, t, e) acc -> A.ELet x t e acc) e defs
+
 toANFClause :: A.Value -> T.Clause -> ANFTransform A.Expr
 toANFClause v (T.Clause (T.PCtor c xs) e) = do
   fields <- ctorFields c
@@ -44,14 +48,12 @@ toANFClause v (T.Clause (T.PCtor c xs) e) = do
   let transFields = map toANFType fields
   let ctorType = A.TStructPointer $ A.TInt : transFields
   e' <- toANFExpr e
-  return
-    $ A.ELet w ctorType (A.ECast ctorType v)
-    $ foldr
-      ( \(i, x, t) acc ->
-          A.ELet x t (A.EFetch (A.VVar w) (i + 1)) acc
+  return $
+    buildExpr
+      ( (w, ctorType, A.ECast ctorType v)
+          : zip3 xs transFields (map (A.EFetch (A.VVar w)) [1 ..])
       )
       e'
-    $ zip3 [0 ..] xs transFields
 
 toANFExpr :: T.Expr -> ANFTransform A.Expr
 toANFExpr T.Annot {T.value = e} = toANFExpr' e
@@ -91,7 +93,7 @@ toANFExpr' e =
       e2' <- toANFExpr e2
       let t1' = toANFType t1
           t2' = toANFType t2
-      return $ A.EFun f x t1' t2' e1' e2'
+      return $ A.ELet f (A.TArrow t1' t2') (A.EValue (A.VFun f x t1' t2' e1')) e2'
     T.ECtor c es -> do
       r <- freshVar "rec"
       tagId <- ctorTagId c
@@ -100,10 +102,8 @@ toANFExpr' e =
         es
         ( \vs ->
             return $
-              A.ELet
-                r
-                recType
-                (A.EMakeRecord $ A.VInt tagId : vs)
+              buildExpr
+                [(r, recType, A.EMakeRecord $ A.VInt tagId : vs)]
                 (A.ECast (A.TStructPointer [A.TInt]) (A.VVar r))
         )
     T.ECase e clauses ->
@@ -113,10 +113,8 @@ toANFExpr' e =
             tagVar <- freshVar "tag"
             es <- mapM (toANFClause v) clauses
             return $
-              A.ELet
-                tagVar
-                A.TInt
-                (A.EFetch v 0)
+              buildExpr
+                [(tagVar, A.TInt, A.EFetch v 0)]
                 (A.ESwitch (A.VVar tagVar) es)
         )
     T.EPatternMatchingSeq e1 e2 -> A.EPatternMatchingSeq <$> toANFExpr e1 <*> toANFExpr e2
