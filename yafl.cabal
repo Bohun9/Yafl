@@ -81,6 +81,7 @@ library
                  , text
                  , mtl
                  , containers
+                 , transformers
 
     -- Directories containing source files.
     hs-source-dirs:   src
@@ -98,6 +99,10 @@ library
                  , Typed.Typecheck
                  , ANF.Syntax
                  , ANF.ToANF
+                 , Core.Syntax
+                 , Core.Monad
+                 , Core.EscapeAnal
+                 , Core.ClosureConv
 
     build-tools-depends: alex
 
