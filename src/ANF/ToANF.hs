@@ -72,9 +72,10 @@ buildExpr defs e =
     e
     (reverse defs)
 
-toANFClause :: A.Value -> T.Clause -> ANFTransform A.Expr
+toANFClause :: A.Value -> T.Clause -> ANFTransform (Integer, A.Expr)
 toANFClause v (T.Clause (T.PCtor c xs) e) = do
   fields <- ctorFields c
+  tag <- ctorTagId c
   w <- freshVar "ctor"
   let transFields = map toANFType fields
       ctorType = A.TStructPointer $ A.TInt : transFields
@@ -83,11 +84,13 @@ toANFClause v (T.Clause (T.PCtor c xs) e) = do
       (\i -> A.EFetch <$> makeUseVar w ctorType <*> return i)
       [1 .. toInteger $ length fields]
   e' <- toANFExpr e
-  buildExpr
-    ( (w, ctorType, A.ECast ctorType v)
-        : zip3 xs transFields es
-    )
-    e'
+  body <-
+    buildExpr
+      ( (w, ctorType, A.ECast ctorType v)
+          : zip3 xs transFields es
+      )
+      e'
+  return (toInteger tag, body)
 
 toANFExpr :: T.Expr -> ANFTransform A.Expr
 toANFExpr T.Annot {T.value = e, T.typ = t} = toANFExpr' e (toANFType t)

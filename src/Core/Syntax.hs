@@ -22,7 +22,7 @@ data Type
 data Value
   = VInt Int
   | VLocalVar Ast.Var
-  | VGlobalVar Ast.Var
+  | VGlobalFun Ast.Var [Type] Type
   deriving (Show)
 
 data Expr
@@ -30,7 +30,7 @@ data Expr
   | ELet Ast.Var Expr Expr
   | EBinop Ast.Binop Value Value
   | EApp Value [Value]
-  | ESwitch Value [Expr]
+  | ESwitch Value [(Integer, Expr)]
   | EPatternMatchingSeq Expr Expr
   | EPatternMatchingError
   | EAllocRecord Type

@@ -66,6 +66,8 @@ executable yafl
     -- Other library packages from which modules are imported.
     build-depends: base ^>=4.14.3.0
                  , yafl
+                 , text
+                 , llvm-hs-pretty ^>=0.9.0.0
 
     -- Directories containing source files.
     hs-source-dirs:   app
@@ -82,6 +84,8 @@ library
                  , mtl
                  , containers
                  , transformers
+                 , bytestring
+                 , llvm-hs-pure ^>=9.0.0
 
     -- Directories containing source files.
     hs-source-dirs:   src
@@ -103,6 +107,7 @@ library
                  , Core.Monad
                  , Core.EscapeAnal
                  , Core.ClosureConv
+                 , CodeGen.LLVM
 
     build-tools-depends: alex
 

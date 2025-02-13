@@ -58,14 +58,15 @@ convertValue v k = do
               e'
         Nothing -> error "internal error"
     A.VFun f x e -> do
-      fGlobalName <- createHoistedFun f x e
+      (fGlobalName, params, returnType) <- createHoistedFun f x e
+      let paramTypes = map (\(C.Param _ t) -> t) params
       (clo, clo') <- M.freshVar "clo"
       e' <- k clo'
       return $
         buildLetExpr
           [(clo, C.EAllocRecord $ convertType $ A.typ f)]
           ( buildSeqExpr
-              [ C.EStore clo' 0 (C.VGlobalVar fGlobalName),
+              [ C.EStore clo' 0 (C.VGlobalFun fGlobalName paramTypes returnType),
                 C.EStore clo' 1 voidCurEnvValue
               ]
               e'
@@ -134,11 +135,13 @@ convertExpr e =
                       )
               )
         )
-    A.ESwitch v es ->
+    A.ESwitch v cs ->
       convertValue
         v
-        ( \v' ->
-            C.ESwitch v' <$> mapM convertExpr es
+        ( \v' -> do
+            let (tags, es) = unzip cs
+            es' <- mapM convertExpr es
+            return $ C.ESwitch v' (zip tags es')
         )
     A.EPatternMatchingSeq e1 e2 -> C.EPatternMatchingSeq <$> convertExpr e1 <*> convertExpr e2
     A.EPatternMatchingError -> return C.EPatternMatchingError
@@ -182,7 +185,7 @@ collectEscapingVars e =
     A.ELet x e1 e2 -> collectBinder x >> collectEscapingVars e1 >> collectEscapingVars e2
     A.EBinop _ _ _ -> return ()
     A.EApp _ _ -> return ()
-    A.ESwitch _ es -> mapM_ collectEscapingVars es
+    A.ESwitch _ cs -> mapM_ collectEscapingVars (map snd cs)
     A.EPatternMatchingSeq e1 e2 -> collectEscapingVars e1 >> collectEscapingVars e2
     A.EPatternMatchingError -> return ()
     A.EMakeRecord _ _ -> return ()
@@ -225,7 +228,7 @@ voidCurEnvName = "_void_cur_env"
 voidCurEnvValue :: C.Value
 voidCurEnvValue = C.VLocalVar voidCurEnvName
 
-createHoistedFun :: A.VarInfo -> A.VarInfo -> A.Expr -> M.ClosureConv C.Var
+createHoistedFun :: A.VarInfo -> A.VarInfo -> A.Expr -> M.ClosureConv (C.Var, [C.Param], C.Type)
 createHoistedFun
   fi@A.VarInfo {A.name = f, A.tag = fTag, A.typ = fType}
   xi@A.VarInfo {A.name = x, A.tag = xTag, A.typ = xType}
@@ -252,16 +255,18 @@ createHoistedFun
                 )
                 e'
             )
+        params = [C.Param cloArgName voidPointer, C.Param x $ convertType xType]
         (A.TArrow _ returnType) = fType
+        returnType' = convertType returnType
         hoistedFun =
           C.TopLevelFun
             { C.name = f,
-              C.params = [C.Param cloArgName voidPointer, C.Param x $ convertType xType],
-              C.returnType = convertType returnType,
+              C.params = params,
+              C.returnType = returnType',
               C.body = body
             }
     tell [hoistedFun]
-    return f
+    return (f, params, returnType')
 
 convertProgram :: A.Program -> M.ClosureConv ()
 convertProgram (A.Program topLevelExpr) =

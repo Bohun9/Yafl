@@ -39,7 +39,7 @@ data Expr
   | ELet VarInfo Expr Expr
   | EBinop Ast.Binop Value Value
   | EApp Value Value
-  | ESwitch Value [Expr]
+  | ESwitch Value [(Integer, Expr)]
   | EPatternMatchingSeq Expr Expr
   | EPatternMatchingError
   | EMakeRecord [Type] [Value]

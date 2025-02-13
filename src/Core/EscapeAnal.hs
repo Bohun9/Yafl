@@ -77,7 +77,7 @@ analyseExpr e =
       extendVarTable x tag $ analyseExpr e2
     A.EBinop _ v1 v2 -> analyseValue v1 >> analyseValue v2
     A.EApp v1 v2 -> analyseValue v1 >> analyseValue v2
-    A.ESwitch v es -> analyseValue v >> mapM_ analyseExpr es
+    A.ESwitch v cs -> analyseValue v >> mapM_ analyseExpr (map snd cs)
     A.EPatternMatchingSeq e1 e2 -> analyseExpr e1 >> analyseExpr e2
     A.EPatternMatchingError -> return ()
     A.EMakeRecord _ vs -> mapM_ analyseValue vs
