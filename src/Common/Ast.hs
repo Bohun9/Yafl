@@ -1,6 +1,7 @@
 module Common.Ast where
 
 import qualified Common.Node as Node
+import Prettyprinter
 
 type Var = String
 
@@ -27,3 +28,6 @@ data Type'
   | TArrow Type Type
   | TADT Var
   deriving (Show)
+
+instance Pretty Binop where
+  pretty Add = pretty "Add"

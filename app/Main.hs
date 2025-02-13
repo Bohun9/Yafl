@@ -13,5 +13,7 @@ main = do
   -- let result = Yafl.pipeline source
   -- print result
   Yafl.debugPipeline source
+
   let llvmMod = Yafl.pipelineLLVM source
-  print $ TL.unpack $ LLVM.Pretty.ppllvm llvmMod
+  let llvmSource = TL.unpack $ LLVM.Pretty.ppllvm llvmMod
+  writeFile "output.ll" llvmSource

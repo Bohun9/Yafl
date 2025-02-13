@@ -5,5 +5,6 @@ data list =
 let sum (xs : list) : int = 
   match xs with
   | Nil -> 0
+  | Cons(x, xs) -> x + sum xs
 in
-sum Nil
+sum (Cons(1, Cons(2, Cons(3, Cons(4, Nil)))))

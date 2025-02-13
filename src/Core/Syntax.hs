@@ -14,6 +14,7 @@ import qualified Common.Ast as Ast
 
 data Type
   = TInt
+  | TVoid
   | TArrow [Type] Type
   | TStruct [Type]
   | TPointer Type
@@ -53,5 +54,5 @@ data TopLevelFun = TopLevelFun
   deriving (Show)
 
 data Program
-  = Program [TopLevelFun]
+  = Program [TopLevelFun] Ast.Var [Type] Type
   deriving (Show)

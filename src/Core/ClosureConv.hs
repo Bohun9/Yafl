@@ -11,7 +11,7 @@ import qualified Core.Syntax as C
 import qualified Data.Map as Map
 
 voidPointer :: C.Type
-voidPointer = C.TPointer C.TInt
+voidPointer = C.TPointer C.TVoid
 
 closureType :: C.Type -> C.Type -> C.Type
 closureType t1 t2 =
@@ -60,11 +60,12 @@ convertValue v k = do
     A.VFun f x e -> do
       (fGlobalName, params, returnType) <- createHoistedFun f x e
       let paramTypes = map (\(C.Param _ t) -> t) params
+      let (C.TPointer recTy) = convertType $ A.typ f
       (clo, clo') <- M.freshVar "clo"
       e' <- k clo'
       return $
         buildLetExpr
-          [(clo, C.EAllocRecord $ convertType $ A.typ f)]
+          [(clo, C.EAllocRecord $ recTy)]
           ( buildSeqExpr
               [ C.EStore clo' 0 (C.VGlobalFun fGlobalName paramTypes returnType),
                 C.EStore clo' 1 voidCurEnvValue
@@ -152,7 +153,7 @@ convertExpr e =
         ( \vs' ->
             return $
               buildLetExpr
-                [(r, C.EAllocRecord $ C.TPointer $ C.TStruct $ map convertType ts)]
+                [(r, C.EAllocRecord $ C.TStruct $ map convertType ts)]
                 ( buildSeqExpr
                     (zipWith (C.EStore r') [0 ..] vs')
                     (C.EValue r')
@@ -235,10 +236,11 @@ createHoistedFun
   e = do
     enclosingEnvType <- reader M.curEnvType
     envPayloadTypes <- envPayloadTypes fi xi e
-    let curEnvType = C.TPointer $ C.TStruct $ enclosingEnvType : envPayloadTypes
+    let curEnvType = C.TStruct $ enclosingEnvType : envPayloadTypes
+        curEnvTypePtr = C.TPointer curEnvType
     fEnvUpdate <- varEnvUpdate fi
     xEnvUpdate <- varEnvUpdate xi
-    e' <- convertExpr e
+    e' <- local (\r -> r {M.curEnvType = curEnvTypePtr}) $ convertExpr e
     let f' = C.VLocalVar f
         body =
           buildLetExpr
@@ -268,11 +270,11 @@ createHoistedFun
     tell [hoistedFun]
     return (f, params, returnType')
 
-convertProgram :: A.Program -> M.ClosureConv ()
-convertProgram (A.Program topLevelExpr) =
+convertProgram :: A.Program -> M.ClosureConv (C.Var, [C.Type], C.Type)
+convertProgram (A.Program topLevelExpr) = do
   let mainFunVar =
         A.VarInfo
-          { A.name = "yafl",
+          { A.name = "yafl_toplevel",
             A.tag = A.Tag (-1),
             A.typ = A.TArrow A.TInt A.TInt
           }
@@ -282,7 +284,9 @@ convertProgram (A.Program topLevelExpr) =
             A.tag = A.Tag (-1),
             A.typ = A.TInt
           }
-   in void $ createHoistedFun mainFunVar mainArgVar topLevelExpr
+  (topLevelName, topLevelArgs, topLevelRetTy) <- createHoistedFun mainFunVar mainArgVar topLevelExpr
+  let topLevelArgTys = map (\(C.Param _ t) -> t) topLevelArgs
+  return (topLevelName, topLevelArgTys, topLevelRetTy)
 
 closureConv :: A.Program -> C.Program
 closureConv program =
@@ -298,5 +302,5 @@ closureConv program =
             M.levelEnvSize = Map.empty
           }
       m = (lift $ lift $ EscapeAnal.escapeAnalysis program) >> convertProgram program
-      topLevelFuns = evalState (runReaderT (execWriterT m) initEnv) initState
-   in C.Program topLevelFuns
+      ((topLevelName, topLevelArgTys, topLevelRetTy), topLevelFuns) = evalState (runReaderT (runWriterT m) initEnv) initState
+   in C.Program topLevelFuns topLevelName topLevelArgTys topLevelRetTy

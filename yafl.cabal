@@ -107,6 +107,7 @@ library
                  , Core.Monad
                  , Core.EscapeAnal
                  , Core.ClosureConv
+                 , Core.Pretty
                  , CodeGen.LLVM
 
     build-tools-depends: alex

@@ -4,10 +4,12 @@ import ANF.Syntax as ANF
 import qualified ANF.ToANF
 import qualified CodeGen.LLVM
 import qualified Core.ClosureConv
+import qualified Core.Pretty
 import Core.Syntax as Core
 import qualified Desugared.Desugar
 import qualified LLVM.AST
 import Prettyprinter
+import Prettyprinter.Render.Text
 import qualified Surface.Lexer
 import qualified Surface.Parser
 import qualified Typed.Typecheck
@@ -37,21 +39,23 @@ pipelineLLVM source =
 debugPipeline :: String -> IO ()
 debugPipeline source = do
   let tokens = Surface.Lexer.alexScanTokens source
-  print tokens
-  print "Lexing done..."
+  -- print tokens
+  -- print "Lexing done..."
   let program = Surface.Parser.parseProgram tokens
-  print program
-  print "Parsing done..."
+  -- print program
+  -- print "Parsing done..."
   let desugared = Desugared.Desugar.desugar program
-  print desugared
-  print "Desugar done..."
+  -- print desugared
+  -- print "Desugar done..."
   let typed = Typed.Typecheck.typecheck desugared
-  print typed
-  print "Typecheck done..."
+  -- print typed
+  -- print "Typecheck done..."
   let anf = ANF.ToANF.toANF typed
-  print anf
-  print "ANF done..."
+  -- print anf
+  -- print "ANF done..."
   let core = Core.ClosureConv.closureConv anf
-  print core
-  print "Closure Conversion done..."
-  return ()
+  -- print core
+  -- print "Closure Conversion done..."
+  -- print "------------------"
+  putDoc (pretty core)
+  putStrLn ""

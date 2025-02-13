@@ -36,15 +36,20 @@ extendVarTableMany bs m = foldr (\(x, o) -> extendVarTable x o) m bs
 
 externs :: [(String, [AST.Type], AST.Type)]
 externs =
-  [ ("malloc", [AST.Type.i64], AST.Type.void),
-    ("exit", [AST.Type.i32], AST.Type.void)
+  [ ("malloc", [AST.Type.i32], AST.Type.ptr AST.Type.i8),
+    ("exit", [AST.Type.i32], AST.Type.void),
+    ("match_error", [], AST.Type.void)
   ]
+
+functionPointerTy :: [AST.Type] -> AST.Type -> AST.Type
+functionPointerTy ts rt =
+  (AST.Type.ptr (AST.FunctionType rt ts False))
 
 functionPointerOperand :: String -> [AST.Type] -> AST.Type -> AST.Operand
 functionPointerOperand n ts rt =
   AST.ConstantOperand $
     AST.Const.GlobalReference
-      (AST.Type.ptr (AST.FunctionType rt ts False))
+      (functionPointerTy ts rt)
       (AST.mkName n)
 
 externOperand :: String -> AST.Operand
@@ -57,10 +62,13 @@ malloc, exit :: AST.Operand
 malloc = externOperand "malloc"
 exit = externOperand "exit"
 
+matchError = externOperand "match_error"
+
 genLLVMType :: C.Type -> AST.Type
 genLLVMType t =
   case t of
     C.TInt -> AST.Type.i64
+    C.TVoid -> AST.Type.i8
     C.TArrow ts t' -> AST.Type.FunctionType (genLLVMType t') (map genLLVMType ts) False
     C.TPointer t' -> AST.Type.ptr $ genLLVMType t'
     C.TStruct ts -> AST.Type.StructureType False $ map genLLVMType ts
@@ -107,26 +115,27 @@ codeGenExpr e =
           ( \(b, e) -> do
               IR.emitBlockStart b
               o <- codeGenExpr e
-              IR.emitTerm (AST.Br mergeBlock [])
-              b <- IR.block
+              b <- IR.currentBlock
+              Instr.br mergeBlock
               return (o, b)
           )
           (zip blocks es)
+      IR.emitBlockStart mergeBlock
       Instr.phi clauseOutputs
     C.EPatternMatchingSeq e1 e2 -> do
       failBlock <- IR.freshName (toShortBS "L")
       mergeBlock <- IR.freshName (toShortBS "L")
       o1 <- local (\r -> r {defaultSwitchLabel = failBlock}) $ codeGenExpr e1
-      IR.emitTerm (AST.Br mergeBlock [])
-      b1 <- IR.block
+      b1 <- IR.currentBlock
+      Instr.br mergeBlock
       IR.emitBlockStart failBlock
       o2 <- codeGenExpr e2
-      IR.emitTerm (AST.Br mergeBlock [])
-      b2 <- IR.block
+      b2 <- IR.currentBlock
+      Instr.br mergeBlock
       IR.emitBlockStart mergeBlock
       Instr.phi [(o1, b1), (o2, b2)]
     C.EPatternMatchingError ->
-      Instr.call exit [(Const.int32 1, [])]
+      Instr.call matchError []
     C.EAllocRecord t -> do
       let t' = genLLVMType t
       raw <- Instr.call malloc [(AST.ConstantOperand $ AST.Const.sizeof t', [])]
@@ -178,8 +187,32 @@ moduleGenFunction
 moduleGenExterns :: ModuleGen ()
 moduleGenExterns = mapM_ (\(n, tys, rt) -> Mod.extern (AST.mkName n) tys rt) externs
 
+-- TODO: Closure conversion should generate this entry,
+-- because we should not need to know the closure representation here
+moduleGenEntry :: C.Var -> [C.Type] -> C.Type -> ModuleGen ()
+moduleGenEntry tlName tlArgTys tlRetTy = do
+  let argTys = map genLLVMType tlArgTys
+      retTy = genLLVMType tlRetTy
+      funTy = functionPointerTy argTys retTy
+      cloTy = AST.Type.StructureType False [funTy, AST.Type.ptr AST.Type.i8]
+  void $
+    Mod.function
+      (AST.mkName "yafl")
+      []
+      AST.Type.i64
+      ( \_ -> do
+          raw <- Instr.call malloc [(AST.ConstantOperand $ AST.Const.sizeof cloTy, [])]
+          env <- Instr.bitcast raw $ AST.Type.ptr AST.Type.i8
+          r <-
+            Instr.call
+              (functionPointerOperand tlName argTys retTy)
+              [(env, []), (Const.int64 0, [])]
+          Instr.ret r
+      )
+
 moduleGenProgram :: C.Program -> ModuleGen ()
-moduleGenProgram (C.Program fs) = moduleGenExterns >> mapM_ moduleGenFunction fs
+moduleGenProgram (C.Program fs topLevelName argTys retTy) =
+  moduleGenExterns >> mapM_ moduleGenFunction fs >> moduleGenEntry topLevelName argTys retTy
 
 codeGen :: C.Program -> AST.Module
 codeGen program = Mod.buildModule (toShortBS "YaflModule") $ moduleGenProgram program

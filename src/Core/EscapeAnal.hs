@@ -44,7 +44,7 @@ incLevel :: M.EscapeAnal a -> M.EscapeAnal a
 incLevel m = do
   (M.Level x) <- reader M.curLevel
   let nestedLevel = M.Level $ x + 1
-  modify (\s -> s {M.levelEnvSize = Map.insert nestedLevel 0 (M.levelEnvSize s)})
+  modify (\s -> s {M.levelEnvSize = Map.insert nestedLevel 1 (M.levelEnvSize s)})
   local (\r -> r {M.curLevel = nestedLevel}) m
 
 analyseValue :: A.Value -> M.EscapeAnal ()
