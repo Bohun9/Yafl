@@ -54,7 +54,7 @@ instance Pretty TopLevelFun where
       <+> pretty returnType
       <+> pretty "{"
         <> (nest 2 (line <> pretty body))
-      <+> pretty "} "
+      <+> line <> pretty "} "
 
 instance Pretty Program where
-  pretty (Program fs _ _ _) = vsep (map pretty fs)
+  pretty (Program fs) = vsep (map pretty fs)

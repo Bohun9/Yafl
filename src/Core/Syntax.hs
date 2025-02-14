@@ -54,5 +54,5 @@ data TopLevelFun = TopLevelFun
   deriving (Show)
 
 data Program
-  = Program [TopLevelFun] Ast.Var [Type] Type
+  = Program [TopLevelFun]
   deriving (Show)

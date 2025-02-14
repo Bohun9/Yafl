@@ -187,32 +187,9 @@ moduleGenFunction
 moduleGenExterns :: ModuleGen ()
 moduleGenExterns = mapM_ (\(n, tys, rt) -> Mod.extern (AST.mkName n) tys rt) externs
 
--- TODO: Closure conversion should generate this entry,
--- because we should not need to know the closure representation here
-moduleGenEntry :: C.Var -> [C.Type] -> C.Type -> ModuleGen ()
-moduleGenEntry tlName tlArgTys tlRetTy = do
-  let argTys = map genLLVMType tlArgTys
-      retTy = genLLVMType tlRetTy
-      funTy = functionPointerTy argTys retTy
-      cloTy = AST.Type.StructureType False [funTy, AST.Type.ptr AST.Type.i8]
-  void $
-    Mod.function
-      (AST.mkName "yafl")
-      []
-      AST.Type.i64
-      ( \_ -> do
-          raw <- Instr.call malloc [(AST.ConstantOperand $ AST.Const.sizeof cloTy, [])]
-          env <- Instr.bitcast raw $ AST.Type.ptr AST.Type.i8
-          r <-
-            Instr.call
-              (functionPointerOperand tlName argTys retTy)
-              [(env, []), (Const.int64 0, [])]
-          Instr.ret r
-      )
-
 moduleGenProgram :: C.Program -> ModuleGen ()
-moduleGenProgram (C.Program fs topLevelName argTys retTy) =
-  moduleGenExterns >> mapM_ moduleGenFunction fs >> moduleGenEntry topLevelName argTys retTy
+moduleGenProgram (C.Program fs) =
+  moduleGenExterns >> mapM_ moduleGenFunction fs
 
 codeGen :: C.Program -> AST.Module
 codeGen program = Mod.buildModule (toShortBS "YaflModule") $ moduleGenProgram program

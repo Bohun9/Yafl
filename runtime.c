@@ -6,8 +6,17 @@ void match_error() {
     exit(1);
 }
 
-int64_t yafl();
+struct toplevel_closure {
+    void* fun_ptr; // toplevel does not use it
+    void* env;     // toplevel saves it in its environment
+};
+
+int64_t yafl_toplevel(void* clo, int64_t arg);
 
 int main() {
-    return yafl();
+    struct toplevel_closure closure = {
+        .fun_ptr = NULL,
+        .env = NULL
+    };
+    return yafl_toplevel((void*) &closure, 0);
 }

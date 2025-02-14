@@ -270,7 +270,7 @@ createHoistedFun
     tell [hoistedFun]
     return (f, params, returnType')
 
-convertProgram :: A.Program -> M.ClosureConv (C.Var, [C.Type], C.Type)
+convertProgram :: A.Program -> M.ClosureConv ()
 convertProgram (A.Program topLevelExpr) = do
   let mainFunVar =
         A.VarInfo
@@ -284,9 +284,7 @@ convertProgram (A.Program topLevelExpr) = do
             A.tag = A.Tag (-1),
             A.typ = A.TInt
           }
-  (topLevelName, topLevelArgs, topLevelRetTy) <- createHoistedFun mainFunVar mainArgVar topLevelExpr
-  let topLevelArgTys = map (\(C.Param _ t) -> t) topLevelArgs
-  return (topLevelName, topLevelArgTys, topLevelRetTy)
+  void $ createHoistedFun mainFunVar mainArgVar topLevelExpr
 
 closureConv :: A.Program -> C.Program
 closureConv program =
@@ -302,5 +300,5 @@ closureConv program =
             M.levelEnvSize = Map.empty
           }
       m = (lift $ lift $ EscapeAnal.escapeAnalysis program) >> convertProgram program
-      ((topLevelName, topLevelArgTys, topLevelRetTy), topLevelFuns) = evalState (runReaderT (runWriterT m) initEnv) initState
-   in C.Program topLevelFuns topLevelName topLevelArgTys topLevelRetTy
+      topLevelFuns = evalState (runReaderT (execWriterT m) initEnv) initState
+   in C.Program topLevelFuns
