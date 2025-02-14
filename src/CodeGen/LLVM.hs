@@ -1,6 +1,7 @@
 module CodeGen.LLVM where
 
 import Control.Monad.Reader
+import qualified Core.Builtins
 import qualified Core.Syntax as C
 import qualified Data.ByteString.Char8 as BSC
 import Data.ByteString.Short (ShortByteString)
@@ -42,6 +43,7 @@ externs =
     ("match_error", [], AST.Type.void),
     ("division_error", [], AST.Type.void)
   ]
+    ++ map (\(n, argTys, retTy) -> (n, map genLLVMType argTys, genLLVMType retTy)) Core.Builtins.builtins
 
 functionPointerTy :: [AST.Type] -> AST.Type -> AST.Type
 functionPointerTy ts rt =

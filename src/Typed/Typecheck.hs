@@ -9,6 +9,7 @@ import Control.Monad.State
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Desugared.Syntax as D
+import Typed.Builtins (builtins)
 import qualified Typed.Syntax as T
 
 data TypecheckState = TypecheckState
@@ -220,7 +221,7 @@ typecheck prog =
           }
       initEnv =
         TypecheckEnv
-          { varTable = Map.empty
+          { varTable = Map.fromList builtins
           }
    in case runExcept $ runReaderT (runStateT (typecheckProgram prog) initState) initEnv of
         Left (TypeError p msg) ->

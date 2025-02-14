@@ -105,13 +105,16 @@ library
                  , Desugared.Desugar
                  , Typed.Syntax
                  , Typed.Typecheck
+                 , Typed.Builtins
                  , ANF.Syntax
                  , ANF.ToANF
+                 , ANF.Builtins
                  , Core.Syntax
                  , Core.Monad
                  , Core.EscapeAnal
                  , Core.ClosureConv
                  , Core.Pretty
+                 , Core.Builtins
                  , CodeGen.LLVM
 
     build-tools-depends: alex

@@ -1,6 +1,8 @@
 module Core.EscapeAnal where
 
+import qualified ANF.Builtins
 import qualified ANF.Syntax as A
+import qualified ANF.ToANF
 import Control.Monad.Reader
 import Control.Monad.State
 import qualified Core.Monad as M
@@ -9,9 +11,9 @@ import qualified Data.Map as Map
 extendVarTable :: A.Var -> A.Tag -> M.EscapeAnal a -> M.EscapeAnal a
 extendVarTable x tag m = do
   level <- reader M.curLevel
-  local (\r -> r {M.varTable = Map.insert x (level, tag) (M.varTable r)}) m
+  local (\r -> r {M.varTable = Map.insert x (M.UserDefined level tag) (M.varTable r)}) m
 
-lookupVarTable :: A.Var -> M.EscapeAnal (M.Level, A.Tag)
+lookupVarTable :: A.Var -> M.EscapeAnal M.VarEntry
 lookupVarTable x = do
   varTable <- reader M.varTable
   case Map.lookup x varTable of
@@ -53,18 +55,22 @@ analyseValue v =
     A.VInt _ -> return ()
     A.VVar A.VarInfo {A.name = x, A.tag = useTag} -> do
       useLevel <- reader M.curLevel
-      (defLevel, defTag) <- lookupVarTable x
-      if defLevel < useLevel
-        then do
-          defVarIndex <- varEscapes defLevel defTag
-          let levelDiff (M.Level a) (M.Level b) = a - b
-          insertVarAccess
-            useTag
-            M.NonLocalAccess
-              { M.levelDiff = levelDiff useLevel defLevel,
-                M.envIndex = defVarIndex
-              }
-        else insertVarAccess useTag M.LocalAccess
+      entry <- lookupVarTable x
+      case entry of
+        M.UserDefined defLevel defTag ->
+          if defLevel < useLevel
+            then do
+              defVarIndex <- varEscapes defLevel defTag
+              let levelDiff (M.Level a) (M.Level b) = a - b
+              insertVarAccess
+                useTag
+                M.EnvAccess
+                  { M.levelDiff = levelDiff useLevel defLevel,
+                    M.envIndex = defVarIndex
+                  }
+            else insertVarAccess useTag M.LocalAccess
+        M.BuiltinFun t ->
+          insertVarAccess useTag $ M.BuiltinFunAccess t
     A.VFun A.VarInfo {A.name = f, A.tag = fTag} A.VarInfo {A.name = x, A.tag = xTag} e ->
       incLevel $ extendVarTable f fTag $ extendVarTable x xTag $ analyseExpr e
 
@@ -93,7 +99,7 @@ escapeAnalysis :: A.Program -> State M.ClosureConvState ()
 escapeAnalysis program =
   let initEnv =
         M.EscapeAnalEnv
-          { M.varTable = Map.empty,
+          { M.varTable = Map.fromList $ map (\(n, t) -> (n, M.BuiltinFun t)) ANF.Builtins.builtins,
             M.curLevel = M.Level (-1)
           }
    in runReaderT (analyseProgram program) initEnv

@@ -50,7 +50,8 @@ import qualified Common.Node as Node
 %left '<' "<=" '>' ">=" '='
 %left '+' '-'
 %left '*' '/'
-%nonassoc LID INTEGER '('
+%nonassoc LID UID INTEGER
+%nonassoc '('
 %nonassoc APP
 
 %%

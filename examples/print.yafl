@@ -1,0 +1,2 @@
+let n = read_int 0 in
+print_int (n * n)

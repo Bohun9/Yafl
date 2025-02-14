@@ -70,6 +70,7 @@ renameVar (Node.Node {Node.pos = p, Node.value = e}) y s =
        in EFun f x t1 t2 e1' e2'
     ECtor c es -> ECtor c (map (\e -> renameVar e y s) es)
     EMatch e cs -> EMatch (renameVar e y s) (map (\c -> renameVarClause c y s) cs)
+    EIf e1 e2 e3 -> EIf (renameVar e1 y s) (renameVar e2 y s) (renameVar e3 y s)
 
 renameVarClause :: Clause -> Ast.Var -> Ast.Var -> Clause
 renameVarClause (Clause pat e) y s =

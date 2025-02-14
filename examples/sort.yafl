@@ -1,0 +1,60 @@
+data list =
+  | Nil
+  | Cons of int * list
+
+data tree = 
+  | Leaf
+  | Node of tree * int * tree
+
+let bst_insert (t : tree) : int -> tree = 
+  let aux1 (n : int) : tree = 
+    match t with
+    | Leaf -> Node(Leaf, n, Leaf)
+    | Node(t1, x, t2) ->
+        if n < x then
+          Node(bst_insert t1 n, x, t2)
+        else
+          Node(t1, x, bst_insert t2 n)
+  in
+  aux1
+in
+
+let bst_to_list_fast (t : tree) : list -> list =
+  let aux2 (acc : list) : list = 
+    match t with
+    | Leaf -> acc
+    | Node(t1, x, t2) ->
+        let acc2 = bst_to_list_fast t2 acc in
+        bst_to_list_fast t1 (Cons(x, acc2))
+  in
+  aux2
+in
+let bst_to_list (t : tree) : list =
+  bst_to_list_fast t Nil
+in
+
+let list_to_bst (xs : list) : tree =
+  match xs with
+  | Nil -> Leaf
+  | Cons(x, xs) -> bst_insert (list_to_bst xs) x
+in
+
+let n = read_int 0 in
+let input_list (n : int) : list = 
+  if n = 0 then
+    Nil
+  else
+    let x = read_int 0 in
+    Cons(x, input_list (n - 1))
+in
+let xs = input_list n in
+
+let output_list (xs : list) : int = 
+  match xs with
+  | Nil -> print_newline 0
+  | Cons(x, xs) ->
+      let x = print_int x in
+      let x = print_space 0 in
+      output_list xs
+in
+output_list (bst_to_list (list_to_bst xs))

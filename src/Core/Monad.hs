@@ -15,10 +15,11 @@ newtype Level = Level Int
 
 data VarAccess
   = LocalAccess
-  | NonLocalAccess
+  | EnvAccess
       { levelDiff :: Int,
         envIndex :: EnvIndex
       }
+  | BuiltinFunAccess A.Type
 
 data ClosureConvState = ClosureConvState
   { varEnvIndex :: Map.Map A.Tag EnvIndex,
@@ -31,8 +32,12 @@ data ClosureConvEnv = ClosureConvEnv
   { curEnvType :: C.Type
   }
 
+data VarEntry
+  = UserDefined Level A.Tag
+  | BuiltinFun A.Type
+
 data EscapeAnalEnv = EscapeAnalEnv
-  { varTable :: Map.Map A.Var (Level, A.Tag),
+  { varTable :: Map.Map A.Var VarEntry,
     curLevel :: Level
   }
 

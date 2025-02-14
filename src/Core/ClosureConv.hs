@@ -45,7 +45,7 @@ convertValue v k = do
       varAccess <- gets M.varAccess
       case Map.lookup tag varAccess of
         Just M.LocalAccess -> k $ C.VLocalVar x
-        Just M.NonLocalAccess {M.levelDiff = diff, M.envIndex = M.EnvIndex index} -> do
+        Just M.EnvAccess {M.levelDiff = diff, M.envIndex = M.EnvIndex index} -> do
           envPairs <- sequence $ replicate (diff - 1) $ M.freshVar "loaded_env"
           let (envs, envs') = unzip envPairs
           (v, v') <- M.freshVar "v"
@@ -56,6 +56,19 @@ convertValue v k = do
             buildLetExpr
               (zip envs es ++ [(v, e)])
               e'
+        Just (M.BuiltinFunAccess t) -> do
+          let (A.TArrow t1 t2) = t
+          let (C.TPointer recTy) = convertType t
+          (clo, clo') <- M.freshVar "clo"
+          e' <- k clo'
+          return $
+            buildLetExpr
+              [(clo, C.EAllocRecord $ recTy)]
+              ( buildSeqExpr
+                  [ C.EStore clo' 0 (C.VGlobalFun x [voidPointer, convertType t1] (convertType t2))
+                  ]
+                  e'
+              )
         Nothing -> error "internal error"
     A.VFun f x e -> do
       (fGlobalName, params, returnType) <- createHoistedFun f x e
