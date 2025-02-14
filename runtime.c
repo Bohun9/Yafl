@@ -6,6 +6,11 @@ void match_error() {
     exit(1);
 }
 
+void division_error() {
+    printf("runtime error: division by zero\n");
+    exit(1);
+}
+
 struct toplevel_closure {
     void* fun_ptr; // toplevel does not use it
     void* env;     // toplevel saves it in its environment

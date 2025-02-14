@@ -13,7 +13,9 @@ import qualified Common.Node as Node
 
 %token
     '+'     { Token _ PLUS }
+    '-'     { Token _ MINUS }
     '*'     { Token _ STAR }
+    '/'     { Token _ SLASH }
     '='     { Token _ EQ }
     '('     { Token _ LPAREN }
     ')'     { Token _ RPAREN }
@@ -34,7 +36,8 @@ import qualified Common.Node as Node
     LID     { Token _ (LID _) }
     UID     { Token _ (UID _) }
 
-%left '+'
+%left '+' '-'
+%left '*' '/'
 %nonassoc LID INTEGER '('
 %nonassoc APP
 
@@ -71,6 +74,9 @@ expr
     : INTEGER                                                { mkNode $1 (EInt $ tokenToInt $1) }
     | LID                                                    { mkNode $1 (EVar $ tokenToVar $1) }
     | expr '+' expr                                          { mkNode $2 (EBinop Add $1 $3) }
+    | expr '-' expr                                          { mkNode $2 (EBinop Sub $1 $3) }
+    | expr '*' expr                                          { mkNode $2 (EBinop Mul $1 $3) }
+    | expr '/' expr                                          { mkNode $2 (EBinop Div $1 $3) }
     | LET LID '=' expr IN expr                               { mkNode $1 (ELet (tokenToVar $2) $4 $6) }
     | LET LID '(' LID ':' type ')' ':' type '=' expr IN expr { mkNode $1 (EFun (tokenToVar $2) (tokenToVar $4) $6 $9 $11 $13) }
     | expr expr %prec APP                                    { mkNode2 $1 (EApp $1 $2) } 

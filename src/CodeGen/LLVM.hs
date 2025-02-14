@@ -9,6 +9,7 @@ import Data.List (find)
 import qualified Data.Map as Map
 import qualified LLVM.AST as AST
 import qualified LLVM.AST.Constant as AST.Const
+import qualified LLVM.AST.IntegerPredicate as AST.IntegerPredicate
 import qualified LLVM.AST.Type as AST.Type
 import qualified LLVM.IRBuilder.Constant as Const
 import qualified LLVM.IRBuilder.Instruction as Instr
@@ -38,7 +39,8 @@ externs :: [(String, [AST.Type], AST.Type)]
 externs =
   [ ("malloc", [AST.Type.i32], AST.Type.ptr AST.Type.i8),
     ("exit", [AST.Type.i32], AST.Type.void),
-    ("match_error", [], AST.Type.void)
+    ("match_error", [], AST.Type.void),
+    ("division_error", [], AST.Type.void)
   ]
 
 functionPointerTy :: [AST.Type] -> AST.Type -> AST.Type
@@ -58,11 +60,11 @@ externOperand x =
     Just (n, ts, t) -> functionPointerOperand n ts t
     Nothing -> error "interal error"
 
-malloc, exit :: AST.Operand
+malloc, exit, matchError, divisionError :: AST.Operand
 malloc = externOperand "malloc"
 exit = externOperand "exit"
-
 matchError = externOperand "match_error"
+divisionError = externOperand "division_error"
 
 genLLVMType :: C.Type -> AST.Type
 genLLVMType t =
@@ -97,6 +99,18 @@ codeGenExpr e =
       o2 <- codeGenValue v2
       case op of
         C.Add -> Instr.add o1 o2
+        C.Sub -> Instr.sub o1 o2
+        C.Mul -> Instr.mul o1 o2
+        C.Div -> do
+          errorBlock <- IR.freshName (toShortBS "L")
+          successBlock <- IR.freshName (toShortBS "L")
+          zeroCheck <- Instr.icmp AST.IntegerPredicate.EQ o2 (Const.int64 0)
+          Instr.condBr zeroCheck errorBlock successBlock
+          IR.emitBlockStart errorBlock
+          Instr.call divisionError []
+          Instr.unreachable
+          IR.emitBlockStart successBlock
+          Instr.sdiv o1 o2
     C.EApp v vs -> do
       o <- codeGenValue v
       os <- mapM codeGenValue vs

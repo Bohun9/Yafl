@@ -7,7 +7,10 @@ type Var = String
 
 data Binop
   = Add
-  deriving (Show)
+  | Sub
+  | Mul
+  | Div
+  deriving (Show, Eq)
 
 type TypeDef = Node.Node TypeDef'
 
@@ -31,3 +34,6 @@ data Type'
 
 instance Pretty Binop where
   pretty Add = pretty "Add"
+  pretty Sub = pretty "Sub"
+  pretty Mul = pretty "Mul"
+  pretty Div = pretty "Div"

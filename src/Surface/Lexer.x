@@ -13,7 +13,9 @@ tokens :-
   $white+ ;
 
   "+"             { \p s -> Token p PLUS }
+  "-"             { \p s -> Token p MINUS }
   "*"             { \p s -> Token p STAR }
+  "/"             { \p s -> Token p SLASH }
   "="             { \p s -> Token p EQ }
   "("             { \p s -> Token p LPAREN }
   ")"             { \p s -> Token p RPAREN }
@@ -41,7 +43,9 @@ data Token
 
 data Token'
   = PLUS
+  | MINUS
   | STAR
+  | SLASH
   | EQ
   | LPAREN
   | RPAREN
