@@ -68,6 +68,10 @@ executable yafl
                  , yafl
                  , text
                  , llvm-hs-pretty ^>=0.9.0.0
+                 , optparse-applicative
+                 , directory
+                 , process
+                 , prettyprinter
 
     -- Directories containing source files.
     hs-source-dirs:   app
