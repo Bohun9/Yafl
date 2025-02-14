@@ -21,6 +21,8 @@ tokens :-
   ">"             { \p s -> Token p RANGLE }
   "<="            { \p s -> Token p LE }
   ">="            { \p s -> Token p GE }
+  "||"            { \p s -> Token p OR }
+  "&&"            { \p s -> Token p AND }
   "("             { \p s -> Token p LPAREN }
   ")"             { \p s -> Token p RPAREN }
   "->"            { \p s -> Token p ARROW }
@@ -60,6 +62,8 @@ data Token'
   | RANGLE
   | LE
   | GE
+  | OR
+  | AND
   | ARROW
   | COMMA
   | PIPE

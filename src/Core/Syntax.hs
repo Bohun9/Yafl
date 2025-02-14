@@ -6,7 +6,8 @@ module Core.Syntax
     TopLevelFun (..),
     Program (..),
     Ast.Var (..),
-    Ast.Binop (..),
+    Ast.EagerBinop (..),
+    Ast.ShortCircBinop (..),
   )
 where
 
@@ -29,7 +30,8 @@ data Value
 data Expr
   = EValue Value
   | ELet Ast.Var Expr Expr
-  | EBinop Ast.Binop Value Value
+  | EEagerBinop Ast.EagerBinop Value Value
+  | EShortCircBinop Ast.ShortCircBinop Expr Expr
   | EApp Value [Value]
   | ESwitch Value [(Integer, Expr)]
   | EPatternMatchingSeq Expr Expr

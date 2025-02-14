@@ -7,6 +7,8 @@ module Desugared.Syntax
     Program (..),
     Ast.Var,
     Ast.Binop (..),
+    Ast.EagerBinop (..),
+    Ast.ShortCircBinop (..),
     Ast.TypeDef,
     Ast.TypeDef' (..),
     Ast.Constructor,

@@ -23,8 +23,10 @@ instance Pretty Expr where
   pretty (EValue v) = pretty "Value" <+> pretty v
   pretty (ELet v e1 e2) =
     hang 0 $ pretty "Let" <+> pretty v <+> pretty "=" <+> pretty e1 <+> pretty "in" <+> line <> pretty e2
-  pretty (EBinop binop v1 v2) =
-    pretty "Binop" <+> pretty binop <+> pretty v1 <+> pretty v2
+  pretty (EEagerBinop binop v1 v2) =
+    pretty "EagerBinop" <+> pretty binop <+> pretty v1 <+> pretty v2
+  pretty (EShortCircBinop binop e1 e2) =
+    pretty "ShortCircBinop" <+> pretty binop <+> parens (pretty e1) <+> parens (pretty e2)
   pretty (EApp fun args) =
     pretty "App" <+> pretty fun <+> tupled (map pretty args)
   pretty (ESwitch cond cases) =

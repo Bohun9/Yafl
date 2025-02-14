@@ -94,7 +94,7 @@ codeGenExpr e =
     C.ELet x e1 e2 -> do
       o <- codeGenExpr e1
       extendVarTable x o $ codeGenExpr e2
-    C.EBinop op v1 v2 -> do
+    C.EEagerBinop op v1 v2 -> do
       o1 <- codeGenValue v1
       o2 <- codeGenValue v2
       case op of
@@ -116,6 +116,20 @@ codeGenExpr e =
         C.Gt -> Instr.icmp AST.IntegerPredicate.SGT o1 o2
         C.Ge -> Instr.icmp AST.IntegerPredicate.SGE o1 o2
         C.Eq -> Instr.icmp AST.IntegerPredicate.EQ o1 o2
+    C.EShortCircBinop op e1 e2 -> do
+      rhsBlock <- IR.freshName (toShortBS "L")
+      mergeBlock <- IR.freshName (toShortBS "L")
+      o1 <- codeGenExpr e1
+      b1 <- IR.currentBlock
+      case op of
+        C.Or -> Instr.condBr o1 mergeBlock rhsBlock
+        C.And -> Instr.condBr o1 rhsBlock mergeBlock
+      IR.emitBlockStart rhsBlock
+      o2 <- codeGenExpr e2
+      b2 <- IR.currentBlock
+      Instr.br mergeBlock
+      IR.emitBlockStart mergeBlock
+      Instr.phi [(o1, b1), (o2, b2)]
     C.EApp v vs -> do
       o <- codeGenValue v
       os <- mapM codeGenValue vs

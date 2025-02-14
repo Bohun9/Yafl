@@ -75,7 +75,8 @@ analyseExpr e =
     A.ELet A.VarInfo {A.name = x, A.tag = tag} e1 e2 -> do
       analyseExpr e1
       extendVarTable x tag $ analyseExpr e2
-    A.EBinop _ v1 v2 -> analyseValue v1 >> analyseValue v2
+    A.EEagerBinop _ v1 v2 -> analyseValue v1 >> analyseValue v2
+    A.EShortCircBinop _ e1 e2 -> analyseExpr e1 >> analyseExpr e2
     A.EApp v1 v2 -> analyseValue v1 >> analyseValue v2
     A.ESwitch v cs -> analyseValue v >> mapM_ analyseExpr (map snd cs)
     A.EPatternMatchingSeq e1 e2 -> analyseExpr e1 >> analyseExpr e2

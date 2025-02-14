@@ -101,15 +101,19 @@ toANFExpr' e t =
     T.EInt n -> return $ A.EValue (A.VInt n)
     T.EVar x -> A.EValue <$> makeUseVar x t
     T.EBinop op e1 e2 ->
-      toANFExprName
-        e1
-        ( \v1 ->
-            toANFExprName
-              e2
-              ( \v2 ->
-                  return $ A.EBinop op v1 v2
-              )
-        )
+      case op of
+        T.EagerBinop op ->
+          toANFExprName
+            e1
+            ( \v1 ->
+                toANFExprName
+                  e2
+                  ( \v2 ->
+                      return $ A.EEagerBinop op v1 v2
+                  )
+            )
+        T.ShortCircBinop op ->
+          A.EShortCircBinop op <$> toANFExpr e1 <*> toANFExpr e2
     T.EApp e1 e2 ->
       toANFExprName
         e1

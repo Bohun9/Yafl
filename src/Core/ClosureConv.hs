@@ -106,16 +106,18 @@ convertExpr e =
               envUpdate
               e2'
           )
-    A.EBinop op v1 v2 ->
+    A.EEagerBinop op v1 v2 ->
       convertValue
         v1
         ( \v1' ->
             convertValue
               v2
               ( \v2' ->
-                  return $ C.EBinop op v1' v2'
+                  return $ C.EEagerBinop op v1' v2'
               )
         )
+    A.EShortCircBinop op e1 e2 ->
+      C.EShortCircBinop op <$> convertExpr e1 <*> convertExpr e2
     A.EApp v1 v2 ->
       convertValue
         v1
@@ -184,11 +186,12 @@ collectEscapingVars :: A.Expr -> WriterT [(M.EnvIndex, A.Type)] M.ClosureConv ()
 collectEscapingVars e =
   case e of
     A.EValue _ -> return ()
-    A.ELet x e1 e2 -> collectBinder x >> collectEscapingVars e1 >> collectEscapingVars e2
-    A.EBinop _ _ _ -> return ()
+    A.ELet x e1 e2 -> collectBinder x >> mapM_ collectEscapingVars [e1, e2]
+    A.EEagerBinop _ _ _ -> return ()
+    A.EShortCircBinop _ e1 e2 -> mapM_ collectEscapingVars [e1, e2]
     A.EApp _ _ -> return ()
     A.ESwitch _ cs -> mapM_ collectEscapingVars (map snd cs)
-    A.EPatternMatchingSeq e1 e2 -> collectEscapingVars e1 >> collectEscapingVars e2
+    A.EPatternMatchingSeq e1 e2 -> mapM_ collectEscapingVars [e1, e2]
     A.EPatternMatchingError -> return ()
     A.EMakeRecord _ _ -> return ()
     A.EFetch _ _ -> return ()

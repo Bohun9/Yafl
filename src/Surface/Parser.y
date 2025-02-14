@@ -23,6 +23,8 @@ import qualified Common.Node as Node
     '>'     { Token _ RANGLE }
     "<="    { Token _ LE }
     ">="    { Token _ GE }
+    "||"    { Token _ OR }
+    "&&"    { Token _ AND }
     "->"    { Token _ ARROW }
     ','     { Token _ COMMA }
     '|'     { Token _ PIPE }
@@ -43,6 +45,9 @@ import qualified Common.Node as Node
     LID     { Token _ (LID _) }
     UID     { Token _ (UID _) }
 
+%left "||"
+%left "&&"
+%left '<' "<=" '>' ">=" '='
 %left '+' '-'
 %left '*' '/'
 %nonassoc LID INTEGER '('
@@ -80,15 +85,17 @@ types1
 expr
     : INTEGER                                                { mkNode $1 (EInt $ tokenToInt $1) }
     | LID                                                    { mkNode $1 (EVar $ tokenToVar $1) }
-    | expr '<' expr                                          { mkNode $2 (EBinop Lt $1 $3) }
-    | expr '>' expr                                          { mkNode $2 (EBinop Gt $1 $3) }
-    | expr "<=" expr                                         { mkNode $2 (EBinop Le $1 $3) }
-    | expr ">=" expr                                         { mkNode $2 (EBinop Ge $1 $3) }
-    | expr '=' expr                                          { mkNode $2 (EBinop Eq $1 $3) }
-    | expr '+' expr                                          { mkNode $2 (EBinop Add $1 $3) }
-    | expr '-' expr                                          { mkNode $2 (EBinop Sub $1 $3) }
-    | expr '*' expr                                          { mkNode $2 (EBinop Mul $1 $3) }
-    | expr '/' expr                                          { mkNode $2 (EBinop Div $1 $3) }
+    | expr "||" expr                                         { mkNode $2 (EBinop (ShortCircBinop Or) $1 $3) }
+    | expr "&&" expr                                         { mkNode $2 (EBinop (ShortCircBinop And) $1 $3) }
+    | expr '<' expr                                          { mkNode $2 (EBinop (EagerBinop Lt) $1 $3) }
+    | expr '>' expr                                          { mkNode $2 (EBinop (EagerBinop Gt) $1 $3) }
+    | expr "<=" expr                                         { mkNode $2 (EBinop (EagerBinop Le) $1 $3) }
+    | expr ">=" expr                                         { mkNode $2 (EBinop (EagerBinop Ge) $1 $3) }
+    | expr '=' expr                                          { mkNode $2 (EBinop (EagerBinop Eq) $1 $3) }
+    | expr '+' expr                                          { mkNode $2 (EBinop (EagerBinop Add) $1 $3) }
+    | expr '-' expr                                          { mkNode $2 (EBinop (EagerBinop Sub) $1 $3) }
+    | expr '*' expr                                          { mkNode $2 (EBinop (EagerBinop Mul) $1 $3) }
+    | expr '/' expr                                          { mkNode $2 (EBinop (EagerBinop Div) $1 $3) }
     | LET LID '=' expr IN expr                               { mkNode $1 (ELet (tokenToVar $2) $4 $6) }
     | LET LID '(' LID ':' type ')' ':' type '=' expr IN expr { mkNode $1 (EFun (tokenToVar $2) (tokenToVar $4) $6 $9 $11 $13) }
     | expr expr %prec APP                                    { mkNode2 $1 (EApp $1 $2) } 

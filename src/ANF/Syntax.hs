@@ -4,7 +4,8 @@ module ANF.Syntax
     Expr (..),
     Program (..),
     Ast.Var (..),
-    Ast.Binop (..),
+    Ast.EagerBinop (..),
+    Ast.ShortCircBinop (..),
     Tag (..),
     VarInfo (..),
   )
@@ -37,7 +38,8 @@ data Value
 data Expr
   = EValue Value
   | ELet VarInfo Expr Expr
-  | EBinop Ast.Binop Value Value
+  | EEagerBinop Ast.EagerBinop Value Value
+  | EShortCircBinop Ast.ShortCircBinop Expr Expr
   | EApp Value Value
   | ESwitch Value [(Integer, Expr)]
   | EPatternMatchingSeq Expr Expr

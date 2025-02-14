@@ -5,7 +5,7 @@ import Prettyprinter
 
 type Var = String
 
-data Binop
+data EagerBinop
   = Add
   | Sub
   | Mul
@@ -15,6 +15,16 @@ data Binop
   | Gt
   | Ge
   | Eq
+  deriving (Show, Eq)
+
+data ShortCircBinop
+  = Or
+  | And
+  deriving (Show, Eq)
+
+data Binop
+  = EagerBinop EagerBinop
+  | ShortCircBinop ShortCircBinop
   deriving (Show, Eq)
 
 type TypeDef = Node.Node TypeDef'
@@ -39,6 +49,10 @@ data Type'
   deriving (Show)
 
 instance Pretty Binop where
+  pretty (EagerBinop op) = pretty op
+  pretty (ShortCircBinop op) = pretty op
+
+instance Pretty EagerBinop where
   pretty Add = pretty "Add"
   pretty Sub = pretty "Sub"
   pretty Mul = pretty "Mul"
@@ -48,3 +62,7 @@ instance Pretty Binop where
   pretty Gt = pretty "Gt"
   pretty Ge = pretty "Ge"
   pretty Eq = pretty "Eq"
+
+instance Pretty ShortCircBinop where
+  pretty Or = pretty "Or"
+  pretty And = pretty "And"

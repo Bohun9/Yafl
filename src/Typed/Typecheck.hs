@@ -89,15 +89,21 @@ typecheckExpr' e p =
       (e1', t1) <- typecheckExpr2 e1
       (e2', t2) <- typecheckExpr2 e2
       t <- case op of
-        _ | op `elem` [D.Add, D.Sub, D.Mul, D.Div] ->
+        D.EagerBinop op ->
+          case op of
+            _ | op `elem` [D.Add, D.Sub, D.Mul, D.Div] ->
+              case (t1, t2) of
+                (T.TInt, T.TInt) -> return $ T.TInt
+                _ -> typeError p "Operands should be of type int"
+            _ | op `elem` [D.Lt, D.Le, D.Gt, D.Ge, D.Eq] ->
+              case (t1, t2) of
+                (T.TInt, T.TInt) -> return $ T.TBool
+                _ -> typeError p "Operands should be of type int"
+            _ -> error "internal error"
+        D.ShortCircBinop _ ->
           case (t1, t2) of
-            (T.TInt, T.TInt) -> return $ T.TInt
-            _ -> typeError p "Operands should be of type int"
-        _ | op `elem` [D.Lt, D.Le, D.Gt, D.Ge, D.Eq] ->
-          case (t1, t2) of
-            (T.TInt, T.TInt) -> return $ T.TBool
-            _ -> typeError p "Operands should be of type int"
-        _ -> error "internal error"
+            (T.TBool, T.TBool) -> return $ T.TBool
+            _ -> typeError p "Operands should be of type bool"
       return $ (T.EBinop op e1' e2', t)
     D.ELet x e1 e2 -> do
       (e1', t1) <- typecheckExpr2 e1
