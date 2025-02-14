@@ -1,8 +1,8 @@
 module ANF.Builtins where
 
 import qualified ANF.Syntax as A
-import ANF.ToANF (toANFType)
+import ANF.ToANF (toANFTypePure)
 import qualified Typed.Builtins
 
-builtins :: [(A.Var, A.Type)]
-builtins = map (\(n, t) -> (n, toANFType t)) Typed.Builtins.builtins
+builtinFuns :: [(A.Var, A.Type)]
+builtinFuns = map (\(n, t) -> (n, toANFTypePure t)) Typed.Builtins.builtinFuns

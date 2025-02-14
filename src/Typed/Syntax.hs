@@ -1,6 +1,7 @@
 module Typed.Syntax
   ( Type (..),
     CtorInfo (..),
+    AdtInfo (..),
     TypeInfo (..),
     Annot (..),
     Expr (..),
@@ -31,9 +32,14 @@ data CtorInfo = CtorInfo
   }
   deriving (Show)
 
+data AdtInfo = AdtInfo
+  { isEnum :: Bool
+  }
+  deriving (Show)
+
 data TypeInfo = TypeInfo
   { ctors :: Map.Map Ast.Var CtorInfo,
-    adts :: Set.Set Ast.Var
+    adts :: Map.Map Ast.Var AdtInfo
   }
   deriving (Show)
 

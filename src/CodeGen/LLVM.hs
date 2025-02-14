@@ -43,7 +43,7 @@ externs =
     ("match_error", [], AST.Type.void),
     ("division_error", [], AST.Type.void)
   ]
-    ++ map (\(n, argTys, retTy) -> (n, map genLLVMType argTys, genLLVMType retTy)) Core.Builtins.builtins
+    ++ map (\(n, argTys, retTy) -> (n, map genLLVMType argTys, genLLVMType retTy)) Core.Builtins.builtinFuns
 
 functionPointerTy :: [AST.Type] -> AST.Type -> AST.Type
 functionPointerTy ts rt =
@@ -72,6 +72,7 @@ genLLVMType :: C.Type -> AST.Type
 genLLVMType t =
   case t of
     C.TInt -> AST.Type.i64
+    C.TBool -> AST.Type.i1
     C.TVoid -> AST.Type.i8
     C.TArrow ts t' -> AST.Type.FunctionType (genLLVMType t') (map genLLVMType ts) False
     C.TPointer t' -> AST.Type.ptr $ genLLVMType t'

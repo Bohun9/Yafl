@@ -5,6 +5,7 @@ import Prettyprinter
 
 instance Pretty Type where
   pretty TInt = pretty "int"
+  pretty TBool = pretty "bool"
   pretty TVoid = pretty "void"
   pretty (TArrow ts rt) =
     parens (hsep (punctuate comma (map pretty ts))) <+> pretty "->" <+> pretty rt

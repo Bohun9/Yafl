@@ -29,10 +29,31 @@ freshTag = do
   modify (\s -> s {freshTagId = id + 1})
   return $ A.Tag id
 
+data AdtRepr
+  = EnumRepr
+  | RecordRepr
+
+adtRepr :: T.Var -> ANFTransform AdtRepr
+adtRepr adt = do
+  adts <- reader (T.adts . typeInfo)
+  case Map.lookup adt adts of
+    Just T.AdtInfo {T.isEnum = isEnum} ->
+      if isEnum
+        then return EnumRepr
+        else return RecordRepr
+    Nothing -> error "internal error"
+
+ctorRepr :: T.Var -> ANFTransform AdtRepr
+ctorRepr ctor = do
+  ctors <- reader (T.ctors . typeInfo)
+  case Map.lookup ctor ctors of
+    Just T.CtorInfo {T.adtName = adt} -> adtRepr adt
+    Nothing -> error "internal error"
+
 ctorTagId :: T.Var -> ANFTransform Int
 ctorTagId ctor = do
-  ctorsInfo <- reader (T.ctors . typeInfo)
-  case Map.lookup ctor ctorsInfo of
+  ctors <- reader (T.ctors . typeInfo)
+  case Map.lookup ctor ctors of
     Just info -> return $ T.tagId info
     Nothing -> error "internal error"
 
@@ -43,10 +64,22 @@ ctorFields ctor = do
     Just info -> return $ T.fields info
     Nothing -> error "internal error"
 
-toANFType :: T.Type -> A.Type
-toANFType T.TInt = A.TInt
-toANFType (T.TArrow t1 t2) = A.TArrow (toANFType t1) (toANFType t2)
-toANFType (T.TAdt _) = A.TStructPointer [A.TInt]
+toANFType :: T.Type -> ANFTransform A.Type
+toANFType T.TInt = return A.TInt
+toANFType T.TBool = return A.TBool
+toANFType (T.TArrow t1 t2) = A.TArrow <$> toANFType t1 <*> toANFType t2
+toANFType (T.TAdt adt) = do
+  repr <- adtRepr adt
+  return $ case repr of
+    EnumRepr -> A.TInt
+    RecordRepr -> A.TStructPointer [A.TInt]
+
+-- Simple hack to translate builtin function types
+-- Otherwise we would have to put builtins in the Program datatype
+toANFTypePure :: T.Type -> A.Type
+toANFTypePure T.TInt = A.TInt
+toANFTypePure (T.TArrow t1 t2) = A.TArrow (toANFTypePure t1) (toANFTypePure t2)
+toANFTypePure (T.TAdt adt) = A.TInt
 
 makeVar :: A.Var -> A.Type -> ANFTransform A.VarInfo
 makeVar x t = do
@@ -74,26 +107,33 @@ buildExpr defs e =
 
 toANFClause :: A.Value -> T.Clause -> ANFTransform (Integer, A.Expr)
 toANFClause v (T.Clause (T.PCtor c xs) e) = do
-  fields <- ctorFields c
   tag <- ctorTagId c
-  w <- freshVar "ctor"
-  let transFields = map toANFType fields
-      ctorType = A.TStructPointer $ A.TInt : transFields
-  es <-
-    mapM
-      (\i -> A.EFetch <$> makeUseVar w ctorType <*> return i)
-      [1 .. toInteger $ length fields]
+  repr <- ctorRepr c
   e' <- toANFExpr e
-  body <-
-    buildExpr
-      ( (w, ctorType, A.ECast ctorType v)
-          : zip3 xs transFields es
-      )
-      e'
-  return (toInteger tag, body)
+  case repr of
+    EnumRepr ->
+      return (toInteger tag, e')
+    RecordRepr -> do
+      fields <- ctorFields c
+      w <- freshVar "ctor"
+      transFields <- mapM toANFType fields
+      let ctorType = A.TStructPointer $ A.TInt : transFields
+      es <-
+        mapM
+          (\i -> A.EFetch <$> makeUseVar w ctorType <*> return i)
+          [1 .. toInteger $ length fields]
+      body <-
+        buildExpr
+          ( (w, ctorType, A.ECast ctorType v)
+              : zip3 xs transFields es
+          )
+          e'
+      return (toInteger tag, body)
 
 toANFExpr :: T.Expr -> ANFTransform A.Expr
-toANFExpr T.Annot {T.value = e, T.typ = t} = toANFExpr' e (toANFType t)
+toANFExpr T.Annot {T.value = e, T.typ = t} = do
+  t' <- toANFType t
+  toANFExpr' e t'
 
 toANFExpr' :: T.Expr' -> A.Type -> ANFTransform A.Expr
 toANFExpr' e t =
@@ -127,38 +167,47 @@ toANFExpr' e t =
     T.ELet x e1 e2 -> do
       e1' <- toANFExpr e1
       e2' <- toANFExpr e2
-      let t = (toANFType . T.typ) e1
+      t <- toANFType $ T.typ e1
       buildExpr [(x, t, e1')] e2'
     T.EFun f x t1 t2 e1 e2 -> do
       e1' <- toANFExpr e1
       e2' <- toANFExpr e2
-      let t1' = toANFType t1
-          t2' = toANFType t2
-          t' = A.TArrow t1' t2'
+      t1' <- toANFType t1
+      t2' <- toANFType t2
+      let t' = A.TArrow t1' t2'
       f' <- makeVar f t'
       x' <- makeVar x t1'
       buildExpr [(f, t', A.EValue (A.VFun f' x' e1'))] e2'
     T.ECtor c es -> do
-      let fieldTypes = A.TInt : map (toANFType . T.typ) es
-      let rType = A.TStructPointer fieldTypes
-      (r, r') <- freshUseVar "r" rType
       tagId <- ctorTagId c
-      toANFExprNames
-        es
-        ( \vs ->
-            buildExpr
-              [(r, rType, A.EMakeRecord fieldTypes $ A.VInt tagId : vs)]
-              (A.ECast (A.TStructPointer [A.TInt]) r')
-        )
+      repr <- ctorRepr c
+      case repr of
+        EnumRepr -> return $ A.EValue (A.VInt tagId)
+        RecordRepr -> do
+          fieldTypes <- (:) <$> return A.TInt <*> mapM (toANFType . T.typ) es
+          let rType = A.TStructPointer fieldTypes
+          (r, r') <- freshUseVar "r" rType
+          toANFExprNames
+            es
+            ( \vs ->
+                buildExpr
+                  [(r, rType, A.EMakeRecord fieldTypes $ A.VInt tagId : vs)]
+                  (A.ECast (A.TStructPointer [A.TInt]) r')
+            )
     T.ECase e clauses ->
       toANFExprName
         e
         ( \v -> do
-            (t, t') <- freshUseVar "tag" A.TInt
             es <- mapM (toANFClause v) clauses
-            buildExpr
-              [(t, A.TInt, A.EFetch v 0)]
-              (A.ESwitch t' es)
+            let (T.TAdt adt) = T.typ e
+            repr <- adtRepr adt
+            case repr of
+              EnumRepr -> return $ A.ESwitch v es
+              RecordRepr -> do
+                (t, t') <- freshUseVar "tag" A.TInt
+                buildExpr
+                  [(t, A.TInt, A.EFetch v 0)]
+                  (A.ESwitch t' es)
         )
     T.EPatternMatchingSeq e1 e2 -> A.EPatternMatchingSeq <$> toANFExpr e1 <*> toANFExpr e2
     T.EPatternMatchingError -> return A.EPatternMatchingError
@@ -170,7 +219,7 @@ toANFExprName e k = do
   case e1 of
     A.EValue v -> k v
     _ -> do
-      let t = toANFType $ T.typ e
+      t <- toANFType $ T.typ e
       (a, a') <- freshUseVar "a" t
       e2 <- k a'
       buildExpr [(a, t, e1)] e2

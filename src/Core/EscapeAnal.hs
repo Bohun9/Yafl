@@ -99,7 +99,7 @@ escapeAnalysis :: A.Program -> State M.ClosureConvState ()
 escapeAnalysis program =
   let initEnv =
         M.EscapeAnalEnv
-          { M.varTable = Map.fromList $ map (\(n, t) -> (n, M.BuiltinFun t)) ANF.Builtins.builtins,
+          { M.varTable = Map.fromList $ map (\(n, t) -> (n, M.BuiltinFun t)) ANF.Builtins.builtinFuns,
             M.curLevel = M.Level (-1)
           }
    in runReaderT (analyseProgram program) initEnv

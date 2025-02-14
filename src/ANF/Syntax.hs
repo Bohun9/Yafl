@@ -25,6 +25,7 @@ data VarInfo = VarInfo
 
 data Type
   = TInt
+  | TBool
   | TArrow Type Type
   | TStructPointer [Type]
   deriving (Show)

@@ -15,6 +15,7 @@ import qualified Common.Ast as Ast
 
 data Type
   = TInt
+  | TBool
   | TVoid
   | TArrow [Type] Type
   | TStruct [Type]

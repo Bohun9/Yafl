@@ -9,7 +9,7 @@ import Control.Monad.State
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Desugared.Syntax as D
-import Typed.Builtins (builtins)
+import qualified Typed.Builtins
 import qualified Typed.Syntax as T
 
 data TypecheckState = TypecheckState
@@ -34,8 +34,18 @@ extendEnv x t = local (\r -> r {varTable = Map.insert x t (varTable r)})
 extendEnvMany :: [(D.Var, T.Type)] -> Typecheck a -> Typecheck a
 extendEnvMany xts m = foldr (\(x, t) -> extendEnv x t) m xts
 
-insertAdt :: D.Var -> Typecheck ()
-insertAdt adt = modify (\s -> s {typeInfo = (typeInfo s) {T.adts = Set.insert adt $ (T.adts . typeInfo) s}})
+insertAdt :: D.Var -> Bool -> Typecheck ()
+insertAdt adt isEnum =
+  modify
+    ( \s ->
+        s
+          { typeInfo =
+              (typeInfo s)
+                { T.adts =
+                    Map.insert adt (T.AdtInfo {T.isEnum = isEnum}) $ (T.adts . typeInfo) s
+                }
+          }
+    )
 
 insertCtor :: D.Var -> Int -> D.Var -> [T.Type] -> Typecheck ()
 insertCtor ctor tag adt fields = do
@@ -49,8 +59,8 @@ typecheckType D.Node {D.pos = p, D.value = t} =
     D.TBool -> return T.TBool
     D.TArrow t1 t2 -> T.TArrow <$> typecheckType t1 <*> typecheckType t2
     D.TADT n -> do
-      adtSet <- gets (T.adts . typeInfo)
-      if Set.member n adtSet
+      adts <- gets (T.adts . typeInfo)
+      if Map.member n adts
         then return $ T.TAdt n
         else typeError p $ "Unbound type name " ++ n
 
@@ -61,7 +71,8 @@ typecheckCtor adt (tag, D.Node {D.pos = p, D.value = D.Constructor ctor types}) 
 
 typecheckTypeDef :: D.TypeDef -> Typecheck ()
 typecheckTypeDef D.Node {D.pos = p, D.value = D.TypeDef adt ctors} = do
-  insertAdt adt
+  let isEnum = all null (map ((\(D.Constructor _ ts) -> ts) . D.value) ctors)
+  insertAdt adt isEnum
   mapM_ (typecheckCtor adt) (zip [0 ..] ctors)
 
 typecheckTypeDefs :: [D.TypeDef] -> Typecheck ()
@@ -203,8 +214,18 @@ typecheckExpr' e p =
             else typeError p $ "If clauses have different types"
         _ -> typeError p $ "If guard expression must be of type int"
 
+insertBuiltinTypes :: Typecheck ()
+insertBuiltinTypes =
+  mapM_
+    ( \(adt, ctors) -> do
+        zipWithM_ (\tag (ctor, fields) -> insertCtor ctor tag adt fields) [0 ..] ctors
+        insertAdt adt (all null (map snd ctors))
+    )
+    Typed.Builtins.builtinAdts
+
 typecheckProgram :: D.Program -> Typecheck T.Expr
 typecheckProgram (D.Program tdefs e) = do
+  insertBuiltinTypes
   typecheckTypeDefs tdefs
   typecheckExpr e
 
@@ -213,7 +234,7 @@ typecheck prog =
   let initTypeInfo =
         T.TypeInfo
           { T.ctors = Map.empty,
-            T.adts = Set.empty
+            T.adts = Map.empty
           }
       initState =
         TypecheckState
@@ -221,7 +242,7 @@ typecheck prog =
           }
       initEnv =
         TypecheckEnv
-          { varTable = Map.fromList builtins
+          { varTable = Map.fromList Typed.Builtins.builtinFuns
           }
    in case runExcept $ runReaderT (runStateT (typecheckProgram prog) initState) initEnv of
         Left (TypeError p msg) ->

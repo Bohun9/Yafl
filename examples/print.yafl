@@ -1,2 +1,2 @@
-let n = read_int 0 in
+let n = read_int Unit in
 print_int (n * n)
