@@ -111,6 +111,7 @@ desugarExpr' e p =
       let e2 = D.mkNode p $ D.EPatternMatchingSeq e1 (D.mkNode p D.EPatternMatchingError)
           e3 = D.ELet u e' e2
       return e3
+    S.EIf e1 e2 e3 -> D.EIf <$> desugarExpr e1 <*> desugarExpr e2 <*> desugarExpr e3
 
 desugarProgram :: S.Program -> PMCompiler D.Program
 desugarProgram (S.Program typeDefs e) =

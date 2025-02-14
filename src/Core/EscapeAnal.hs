@@ -83,6 +83,7 @@ analyseExpr e =
     A.EMakeRecord _ vs -> mapM_ analyseValue vs
     A.EFetch v _ -> analyseValue v
     A.ECast _ v -> analyseValue v
+    A.EIf e1 e2 e3 -> analyseExpr e1 >> analyseExpr e2 >> analyseExpr e3
 
 analyseProgram :: A.Program -> M.EscapeAnal ()
 analyseProgram (A.Program e) = incLevel (analyseExpr e)

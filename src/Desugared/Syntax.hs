@@ -35,6 +35,7 @@ data Expr'
   | ECase Expr [Clause]
   | EPatternMatchingSeq Expr Expr
   | EPatternMatchingError
+  | EIf Expr Expr Expr
   deriving (Show)
 
 data Clause

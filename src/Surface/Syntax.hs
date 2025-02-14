@@ -33,6 +33,7 @@ data Expr'
   | EFun Ast.Var Ast.Var Ast.Type Ast.Type Expr Expr
   | ECtor Ast.Var [Expr]
   | EMatch Expr [Clause]
+  | EIf Expr Expr Expr
   deriving (Show)
 
 data Clause

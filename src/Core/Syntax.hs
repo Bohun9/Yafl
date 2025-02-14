@@ -39,6 +39,7 @@ data Expr
   | EStore Value Integer Value
   | EFetch Value Integer
   | ECast Type Value
+  | EIf Expr Expr Expr
   deriving (Show)
 
 data Param

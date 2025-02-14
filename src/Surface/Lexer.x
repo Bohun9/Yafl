@@ -17,6 +17,10 @@ tokens :-
   "*"             { \p s -> Token p STAR }
   "/"             { \p s -> Token p SLASH }
   "="             { \p s -> Token p EQ }
+  "<"             { \p s -> Token p LANGLE }
+  ">"             { \p s -> Token p RANGLE }
+  "<="            { \p s -> Token p LE }
+  ">="            { \p s -> Token p GE }
   "("             { \p s -> Token p LPAREN }
   ")"             { \p s -> Token p RPAREN }
   "->"            { \p s -> Token p ARROW }
@@ -31,6 +35,9 @@ tokens :-
   "int"           { \p s -> Token p INT } 
   "match"         { \p s -> Token p MATCH } 
   "with"          { \p s -> Token p WITH } 
+  "if"            { \p s -> Token p IF } 
+  "then"          { \p s -> Token p THEN } 
+  "else"          { \p s -> Token p ELSE } 
 
   $digit+         { \p s -> Token p (INTEGER $ read s) }
   [a-z]$alphanum* { \p s -> Token p (LID s) }
@@ -49,6 +56,10 @@ data Token'
   | EQ
   | LPAREN
   | RPAREN
+  | LANGLE
+  | RANGLE
+  | LE
+  | GE
   | ARROW
   | COMMA
   | PIPE
@@ -61,6 +72,9 @@ data Token'
   | INT
   | MATCH
   | WITH
+  | IF
+  | THEN
+  | ELSE
 
   | INTEGER Int
   | LID String

@@ -45,6 +45,7 @@ typecheckType :: D.Type -> Typecheck T.Type
 typecheckType D.Node {D.pos = p, D.value = t} =
   case t of
     D.TInt -> return T.TInt
+    D.TBool -> return T.TBool
     D.TArrow t1 t2 -> T.TArrow <$> typecheckType t1 <*> typecheckType t2
     D.TADT n -> do
       adtSet <- gets (T.adts . typeInfo)
@@ -91,6 +92,10 @@ typecheckExpr' e p =
         _ | op `elem` [D.Add, D.Sub, D.Mul, D.Div] ->
           case (t1, t2) of
             (T.TInt, T.TInt) -> return $ T.TInt
+            _ -> typeError p "Operands should be of type int"
+        _ | op `elem` [D.Lt, D.Le, D.Gt, D.Ge, D.Eq] ->
+          case (t1, t2) of
+            (T.TInt, T.TInt) -> return $ T.TBool
             _ -> typeError p "Operands should be of type int"
         _ -> error "internal error"
       return $ (T.EBinop op e1' e2', t)
@@ -180,6 +185,16 @@ typecheckExpr' e p =
         else return ()
       return (T.EPatternMatchingSeq e1' e2', t1)
     D.EPatternMatchingError -> undefined
+    D.EIf e1 e2 e3 -> do
+      (e1', t1) <- typecheckExpr2 e1
+      (e2', t2) <- typecheckExpr2 e2
+      (e3', t3) <- typecheckExpr2 e3
+      case t1 of
+        T.TBool ->
+          if t2 == t3
+            then return (T.EIf e1' e2' e3', t2)
+            else typeError p $ "If clauses have different types"
+        _ -> typeError p $ "If guard expression must be of type int"
 
 typecheckProgram :: D.Program -> Typecheck T.Expr
 typecheckProgram (D.Program tdefs e) = do

@@ -158,6 +158,7 @@ toANFExpr' e t =
         )
     T.EPatternMatchingSeq e1 e2 -> A.EPatternMatchingSeq <$> toANFExpr e1 <*> toANFExpr e2
     T.EPatternMatchingError -> return A.EPatternMatchingError
+    T.EIf e1 e2 e3 -> A.EIf <$> toANFExpr e1 <*> toANFExpr e2 <*> toANFExpr e3
 
 toANFExprName :: T.Expr -> (A.Value -> ANFTransform A.Expr) -> ANFTransform A.Expr
 toANFExprName e k = do

@@ -111,6 +111,11 @@ codeGenExpr e =
           Instr.unreachable
           IR.emitBlockStart successBlock
           Instr.sdiv o1 o2
+        C.Lt -> Instr.icmp AST.IntegerPredicate.SLT o1 o2
+        C.Le -> Instr.icmp AST.IntegerPredicate.SLE o1 o2
+        C.Gt -> Instr.icmp AST.IntegerPredicate.SGT o1 o2
+        C.Ge -> Instr.icmp AST.IntegerPredicate.SGE o1 o2
+        C.Eq -> Instr.icmp AST.IntegerPredicate.EQ o1 o2
     C.EApp v vs -> do
       o <- codeGenValue v
       os <- mapM codeGenValue vs
@@ -168,6 +173,22 @@ codeGenExpr e =
     C.ECast t v -> do
       o <- codeGenValue v
       Instr.bitcast o $ genLLVMType t
+    C.EIf e1 e2 e3 -> do
+      thenBlock <- IR.freshName (toShortBS "L")
+      elseBlock <- IR.freshName (toShortBS "L")
+      mergeBlock <- IR.freshName (toShortBS "L")
+      o1 <- codeGenExpr e1
+      Instr.condBr o1 thenBlock elseBlock
+      IR.emitBlockStart thenBlock
+      o2 <- codeGenExpr e2
+      b2 <- IR.currentBlock
+      Instr.br mergeBlock
+      IR.emitBlockStart elseBlock
+      o3 <- codeGenExpr e3
+      b3 <- IR.currentBlock
+      Instr.br mergeBlock
+      IR.emitBlockStart mergeBlock
+      Instr.phi [(o2, b2), (o3, b3)]
 
 codeGenFunction :: [C.Var] -> C.Expr -> [AST.Operand] -> CodeGen ()
 codeGenFunction paramNames body operands = do

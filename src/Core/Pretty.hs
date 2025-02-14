@@ -41,6 +41,11 @@ instance Pretty Expr where
     pretty "Store" <+> pretty v1 <+> pretty n <+> pretty v2
   pretty (EFetch v n) = pretty "Fetch" <+> pretty v <+> pretty n
   pretty (ECast ty v) = pretty "Cast" <+> pretty ty <+> pretty v
+  pretty (EIf e1 e2 e3) =
+    pretty "If"
+      <+> pretty e1
+      <+> (line <> pretty "then" <+> pretty e2)
+      <+> (line <> pretty "else" <+> pretty e3)
 
 instance Pretty Param where
   pretty (Param v ty) = pretty v <+> pretty ":" <+> pretty ty

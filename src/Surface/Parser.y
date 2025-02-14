@@ -19,6 +19,10 @@ import qualified Common.Node as Node
     '='     { Token _ EQ }
     '('     { Token _ LPAREN }
     ')'     { Token _ RPAREN }
+    '<'     { Token _ LANGLE }
+    '>'     { Token _ RANGLE }
+    "<="    { Token _ LE }
+    ">="    { Token _ GE }
     "->"    { Token _ ARROW }
     ','     { Token _ COMMA }
     '|'     { Token _ PIPE }
@@ -31,6 +35,9 @@ import qualified Common.Node as Node
     INT     { Token _ INT }
     MATCH   { Token _ MATCH }
     WITH    { Token _ WITH }
+    IF      { Token _ IF }
+    THEN    { Token _ THEN }
+    ELSE    { Token _ ELSE }
 
     INTEGER { Token _ (INTEGER _) }
     LID     { Token _ (LID _) }
@@ -73,6 +80,11 @@ types1
 expr
     : INTEGER                                                { mkNode $1 (EInt $ tokenToInt $1) }
     | LID                                                    { mkNode $1 (EVar $ tokenToVar $1) }
+    | expr '<' expr                                          { mkNode $2 (EBinop Lt $1 $3) }
+    | expr '>' expr                                          { mkNode $2 (EBinop Gt $1 $3) }
+    | expr "<=" expr                                         { mkNode $2 (EBinop Le $1 $3) }
+    | expr ">=" expr                                         { mkNode $2 (EBinop Ge $1 $3) }
+    | expr '=' expr                                          { mkNode $2 (EBinop Eq $1 $3) }
     | expr '+' expr                                          { mkNode $2 (EBinop Add $1 $3) }
     | expr '-' expr                                          { mkNode $2 (EBinop Sub $1 $3) }
     | expr '*' expr                                          { mkNode $2 (EBinop Mul $1 $3) }
@@ -84,6 +96,7 @@ expr
     | UID                                                    { mkNode $1 (ECtor (tokenToVar $1) []) }
     | UID '(' exprs1 ')'                                     { mkNode $1 (ECtor (tokenToVar $1) $3) }
     | MATCH expr WITH clauses                                { mkNode $1 (EMatch $2 $4) }
+    | IF expr THEN expr ELSE expr                            { mkNode $1 (EIf $2 $4 $6) }
 
 exprs1
     : expr            { [$1] }

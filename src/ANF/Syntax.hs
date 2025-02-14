@@ -45,6 +45,7 @@ data Expr
   | EMakeRecord [Type] [Value]
   | EFetch Value Integer
   | ECast Type Value
+  | EIf Expr Expr Expr
   deriving (Show)
 
 data Program

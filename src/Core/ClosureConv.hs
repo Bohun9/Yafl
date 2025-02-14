@@ -171,6 +171,7 @@ convertExpr e =
         ( \v' ->
             return $ C.ECast (convertType t) v'
         )
+    A.EIf e1 e2 e3 -> C.EIf <$> convertExpr e1 <*> convertExpr e2 <*> convertExpr e3
 
 collectBinder :: A.VarInfo -> WriterT [(M.EnvIndex, A.Type)] M.ClosureConv ()
 collectBinder A.VarInfo {A.tag = tag, A.typ = typ} = do
@@ -192,6 +193,7 @@ collectEscapingVars e =
     A.EMakeRecord _ _ -> return ()
     A.EFetch _ _ -> return ()
     A.ECast _ _ -> return ()
+    A.EIf e1 e2 e3 -> mapM_ collectEscapingVars [e1, e2, e3]
 
 envPayloadTypes :: A.VarInfo -> A.VarInfo -> A.Expr -> M.ClosureConv [C.Type]
 envPayloadTypes f x e = do

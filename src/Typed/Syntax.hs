@@ -19,6 +19,7 @@ import qualified Data.Set as Set
 
 data Type
   = TInt
+  | TBool
   | TArrow Type Type
   | TAdt Ast.Var
   deriving (Show, Eq)
@@ -55,6 +56,7 @@ data Expr'
   | ECase Expr [Clause]
   | EPatternMatchingSeq Expr Expr
   | EPatternMatchingError
+  | EIf Expr Expr Expr
   deriving (Show)
 
 data Clause
