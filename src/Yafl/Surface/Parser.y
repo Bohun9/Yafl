@@ -1,10 +1,10 @@
 {
-module Surface.Parser where
+module Yafl.Surface.Parser where
 
 import Prelude hiding (EQ)
-import Surface.Lexer
-import Surface.Syntax
-import qualified Common.Node as Node
+import Yafl.Surface.Lexer
+import Yafl.Surface.Syntax
+import qualified Yafl.Common.Node as Node
 }
 
 %name parseProgram

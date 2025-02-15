@@ -4,25 +4,25 @@ module Yafl
   )
 where
 
-import qualified ANF.ToANF
-import qualified CodeGen.LLVM
-import qualified Core.ClosureConv
-import qualified Core.Pretty
-import qualified Core.Syntax
-import qualified Desugared.Desugar
 import qualified LLVM.AST
-import qualified Surface.Lexer
-import qualified Surface.Parser
-import qualified Typed.Typecheck
+import qualified Yafl.ANF.ToANF as ANF
+import qualified Yafl.CodeGen.LLVM as CG
+import qualified Yafl.Core.ClosureConv as CC
+import qualified Yafl.Core.Pretty
+import qualified Yafl.Core.Syntax as Core
+import qualified Yafl.Desugared.Desugar as Desugar
+import qualified Yafl.Surface.Lexer as Lexer
+import qualified Yafl.Surface.Parser as Parser
+import qualified Yafl.Typed.Typecheck as Typecheck
 
-corePipeline :: String -> Core.Syntax.Program
+corePipeline :: String -> Core.Program
 corePipeline =
-  Core.ClosureConv.closureConv
-    . ANF.ToANF.toANF
-    . Typed.Typecheck.typecheck
-    . Desugared.Desugar.desugar
-    . Surface.Parser.parseProgram
-    . Surface.Lexer.alexScanTokens
+  CC.closureConv
+    . ANF.toANF
+    . Typecheck.typecheck
+    . Desugar.desugar
+    . Parser.parseProgram
+    . Lexer.alexScanTokens
 
 llvmPipeline :: String -> LLVM.AST.Module
-llvmPipeline = CodeGen.LLVM.codeGen . corePipeline
+llvmPipeline = CG.codeGen . corePipeline

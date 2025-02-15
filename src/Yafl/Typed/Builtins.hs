@@ -1,7 +1,7 @@
-module Typed.Builtins where
+module Yafl.Typed.Builtins where
 
-import qualified Desugared.Syntax as D
-import qualified Typed.Syntax as T
+import qualified Yafl.Desugared.Syntax as D
+import qualified Yafl.Typed.Syntax as T
 
 builtinFuns :: [(D.Var, T.Type)]
 builtinFuns =

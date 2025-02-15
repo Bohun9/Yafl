@@ -1,7 +1,7 @@
-module Common.Ast where
+module Yafl.Common.Ast where
 
-import qualified Common.Node as Node
 import Prettyprinter
+import qualified Yafl.Common.Node as Node
 
 type Var = String
 

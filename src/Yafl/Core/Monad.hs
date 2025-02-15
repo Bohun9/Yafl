@@ -1,11 +1,11 @@
-module Core.Monad where
+module Yafl.Core.Monad where
 
-import qualified ANF.Syntax as A
 import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Writer
-import qualified Core.Syntax as C
 import qualified Data.Map as Map
+import qualified Yafl.ANF.Syntax as A
+import qualified Yafl.Core.Syntax as C
 
 newtype EnvIndex = EnvIndex Integer
   deriving (Eq, Ord)

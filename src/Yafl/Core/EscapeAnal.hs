@@ -1,12 +1,12 @@
-module Core.EscapeAnal where
+module Yafl.Core.EscapeAnal where
 
-import qualified ANF.Builtins
-import qualified ANF.Syntax as A
-import qualified ANF.ToANF
 import Control.Monad.Reader
 import Control.Monad.State
-import qualified Core.Monad as M
 import qualified Data.Map as Map
+import qualified Yafl.ANF.Builtins as ANF.Builtins
+import qualified Yafl.ANF.Syntax as A
+import qualified Yafl.ANF.ToANF
+import qualified Yafl.Core.Monad as M
 
 extendVarTable :: A.Var -> A.Tag -> M.EscapeAnal a -> M.EscapeAnal a
 extendVarTable x tag m = do

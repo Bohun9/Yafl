@@ -1,4 +1,4 @@
-module Desugared.Syntax
+module Yafl.Desugared.Syntax
   ( Expr,
     Expr' (..),
     Clause (..),
@@ -21,8 +21,8 @@ module Desugared.Syntax
   )
 where
 
-import qualified Common.Ast as Ast
-import qualified Common.Node as Node
+import qualified Yafl.Common.Ast as Ast
+import qualified Yafl.Common.Node as Node
 
 type Expr = Node.Node Expr'
 

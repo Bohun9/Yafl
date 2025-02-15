@@ -1,4 +1,4 @@
-module ANF.Syntax
+module Yafl.ANF.Syntax
   ( Type (..),
     Value (..),
     Expr (..),
@@ -11,7 +11,7 @@ module ANF.Syntax
   )
 where
 
-import qualified Common.Ast as Ast
+import qualified Yafl.Common.Ast as Ast
 
 newtype Tag = Tag Int
   deriving (Show, Eq, Ord)

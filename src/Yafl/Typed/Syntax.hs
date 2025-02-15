@@ -1,4 +1,4 @@
-module Typed.Syntax
+module Yafl.Typed.Syntax
   ( Type (..),
     CtorInfo (..),
     AdtInfo (..),
@@ -14,9 +14,9 @@ module Typed.Syntax
   )
 where
 
-import qualified Common.Ast as Ast
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import qualified Yafl.Common.Ast as Ast
 
 data Type
   = TInt

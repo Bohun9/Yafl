@@ -1,10 +1,10 @@
-module ANF.ToANF where
+module Yafl.ANF.ToANF where
 
-import qualified ANF.Syntax as A
 import Control.Monad.Reader
 import Control.Monad.State
 import qualified Data.Map as Map
-import qualified Typed.Syntax as T
+import qualified Yafl.ANF.Syntax as A
+import qualified Yafl.Typed.Syntax as T
 
 data ANFState = ANFState
   { freshVarId :: Int,

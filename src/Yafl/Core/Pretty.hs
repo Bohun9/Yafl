@@ -1,7 +1,7 @@
-module Core.Pretty where
+module Yafl.Core.Pretty where
 
-import Core.Syntax
 import Prettyprinter
+import Yafl.Core.Syntax
 
 instance Pretty Type where
   pretty TInt = pretty "int"

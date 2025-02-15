@@ -1,4 +1,4 @@
-module Common.Node
+module Yafl.Common.Node
   ( Node (..),
     mkNode,
     Lexer.AlexPosn (..),
@@ -6,7 +6,7 @@ module Common.Node
 where
 
 import Prettyprinter
-import qualified Surface.Lexer as Lexer
+import qualified Yafl.Surface.Lexer as Lexer
 
 data Node a = Node
   { pos :: Lexer.AlexPosn,

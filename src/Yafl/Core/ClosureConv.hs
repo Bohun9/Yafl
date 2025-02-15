@@ -1,14 +1,14 @@
-module Core.ClosureConv where
+module Yafl.Core.ClosureConv where
 
-import qualified ANF.Syntax as A
 import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Writer
-import qualified Core.EscapeAnal as EscapeAnal
-import qualified Core.Monad as M
-import qualified Core.Syntax as C
 import qualified Data.Map as Map
+import qualified Yafl.ANF.Syntax as A
+import qualified Yafl.Core.EscapeAnal as EscapeAnal
+import qualified Yafl.Core.Monad as M
+import qualified Yafl.Core.Syntax as C
 
 voidPointer :: C.Type
 voidPointer = C.TPointer C.TVoid

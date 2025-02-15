@@ -1,9 +1,9 @@
-module Desugared.Desugar where
+module Yafl.Desugared.Desugar where
 
 import Control.Monad.Except
 import Control.Monad.State
-import qualified Desugared.Syntax as D
-import qualified Surface.Syntax as S
+import qualified Yafl.Desugared.Syntax as D
+import qualified Yafl.Surface.Syntax as S
 
 dummyPos :: S.AlexPosn
 dummyPos = S.AlexPn (-1) (-1) (-1)

@@ -1,4 +1,4 @@
-module Surface.Syntax
+module Yafl.Surface.Syntax
   ( Expr,
     Expr' (..),
     Clause (..),
@@ -21,8 +21,8 @@ module Surface.Syntax
   )
 where
 
-import qualified Common.Ast as Ast
-import qualified Common.Node as Node
+import qualified Yafl.Common.Ast as Ast
+import qualified Yafl.Common.Node as Node
 
 type Expr = Node.Node Expr'
 

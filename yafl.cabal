@@ -96,26 +96,26 @@ library
 
     exposed-modules: Yafl,
 
-    other-modules: Common.Node
-                 , Common.Ast
-                 , Surface.Lexer
-                 , Surface.Syntax
-                 , Surface.Parser
-                 , Desugared.Syntax
-                 , Desugared.Desugar
-                 , Typed.Syntax
-                 , Typed.Typecheck
-                 , Typed.Builtins
-                 , ANF.Syntax
-                 , ANF.ToANF
-                 , ANF.Builtins
-                 , Core.Syntax
-                 , Core.Monad
-                 , Core.EscapeAnal
-                 , Core.ClosureConv
-                 , Core.Pretty
-                 , Core.Builtins
-                 , CodeGen.LLVM
+    other-modules: Yafl.Common.Node
+                 , Yafl.Common.Ast
+                 , Yafl.Surface.Lexer
+                 , Yafl.Surface.Syntax
+                 , Yafl.Surface.Parser
+                 , Yafl.Desugared.Syntax
+                 , Yafl.Desugared.Desugar
+                 , Yafl.Typed.Syntax
+                 , Yafl.Typed.Typecheck
+                 , Yafl.Typed.Builtins
+                 , Yafl.ANF.Syntax
+                 , Yafl.ANF.ToANF
+                 , Yafl.ANF.Builtins
+                 , Yafl.Core.Syntax
+                 , Yafl.Core.Monad
+                 , Yafl.Core.EscapeAnal
+                 , Yafl.Core.ClosureConv
+                 , Yafl.Core.Pretty
+                 , Yafl.Core.Builtins
+                 , Yafl.CodeGen.LLVM
 
     build-tools-depends: alex
 

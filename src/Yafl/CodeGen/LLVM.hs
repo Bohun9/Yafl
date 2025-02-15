@@ -1,8 +1,6 @@
-module CodeGen.LLVM where
+module Yafl.CodeGen.LLVM where
 
 import Control.Monad.Reader
-import qualified Core.Builtins
-import qualified Core.Syntax as C
 import qualified Data.ByteString.Char8 as BSC
 import Data.ByteString.Short (ShortByteString)
 import qualified Data.ByteString.Short as SBS
@@ -16,6 +14,8 @@ import qualified LLVM.IRBuilder.Constant as Const
 import qualified LLVM.IRBuilder.Instruction as Instr
 import qualified LLVM.IRBuilder.Module as Mod
 import qualified LLVM.IRBuilder.Monad as IR
+import qualified Yafl.Core.Builtins as Core.Builtins
+import qualified Yafl.Core.Syntax as C
 
 toShortBS :: String -> ShortByteString
 toShortBS = SBS.toShort . BSC.pack
@@ -43,7 +43,9 @@ externs =
     ("match_error", [], AST.Type.void),
     ("division_error", [], AST.Type.void)
   ]
-    ++ map (\(n, argTys, retTy) -> (n, map genLLVMType argTys, genLLVMType retTy)) Core.Builtins.builtinFuns
+    ++ map
+      (\(n, argTys, retTy) -> (n, map genLLVMType argTys, genLLVMType retTy))
+      Core.Builtins.builtinFuns
 
 functionPointerTy :: [AST.Type] -> AST.Type -> AST.Type
 functionPointerTy ts rt =

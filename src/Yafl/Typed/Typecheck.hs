@@ -1,4 +1,4 @@
-module Typed.Typecheck
+module Yafl.Typed.Typecheck
   ( typecheck,
   )
 where
@@ -8,9 +8,9 @@ import Control.Monad.Reader
 import Control.Monad.State
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import qualified Desugared.Syntax as D
-import qualified Typed.Builtins
-import qualified Typed.Syntax as T
+import qualified Yafl.Desugared.Syntax as D
+import qualified Yafl.Typed.Builtins as Typed.Builtins
+import qualified Yafl.Typed.Syntax as T
 
 data TypecheckState = TypecheckState
   { typeInfo :: T.TypeInfo

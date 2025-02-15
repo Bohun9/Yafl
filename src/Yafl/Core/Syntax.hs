@@ -1,4 +1,4 @@
-module Core.Syntax
+module Yafl.Core.Syntax
   ( Type (..),
     Value (..),
     Expr (..),
@@ -11,7 +11,7 @@ module Core.Syntax
   )
 where
 
-import qualified Common.Ast as Ast
+import qualified Yafl.Common.Ast as Ast
 
 data Type
   = TInt

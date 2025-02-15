@@ -1,5 +1,5 @@
 {
-module Surface.Lexer where
+module Yafl.Surface.Lexer where
 
 import Prelude hiding (EQ)
 }
