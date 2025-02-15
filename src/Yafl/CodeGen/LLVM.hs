@@ -212,6 +212,8 @@ codeGenExpr e =
 
 codeGenFunction :: [C.Var] -> C.Expr -> [AST.Operand] -> CodeGen ()
 codeGenFunction paramNames body operands = do
+  block <- freshBlockName
+  IR.emitBlockStart block
   r <- extendVarTableMany (zip paramNames operands) (codeGenExpr body)
   Instr.ret r
 
