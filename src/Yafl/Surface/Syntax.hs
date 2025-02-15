@@ -32,7 +32,7 @@ data Expr'
   | EBinop Ast.Binop Expr Expr
   | ELet Ast.Var Expr Expr
   | EApp Expr Expr
-  | EFun Ast.Var Ast.Var Ast.Type Ast.Type Expr Expr
+  | EFun Ast.Var [(Ast.Var, Ast.Type)] Ast.Type Expr Expr
   | ECtor Ast.Var [Expr]
   | EMatch Expr [Clause]
   | EIf Expr Expr Expr
@@ -64,10 +64,10 @@ renameVar (Node.Node {Node.pos = p, Node.value = e}) y s =
         then ELet x (renameVar e1 y s) e2
         else ELet x (renameVar e1 y s) (renameVar e2 y s)
     EApp e1 e2 -> EApp (renameVar e1 y s) (renameVar e2 y s)
-    EFun f x t1 t2 e1 e2 ->
-      let e1' = if f == y || x == y then e1 else renameVar e1 y s
+    EFun f params t e1 e2 ->
+      let e1' = if f == y || elem y (map fst params) then e1 else renameVar e1 y s
           e2' = if f == y then e2 else renameVar e2 y s
-       in EFun f x t1 t2 e1' e2'
+       in EFun f params t e1' e2'
     ECtor c es -> ECtor c (map (\e -> renameVar e y s) es)
     EMatch e cs -> EMatch (renameVar e y s) (map (\c -> renameVarClause c y s) cs)
     EIf e1 e2 e3 -> EIf (renameVar e1 y s) (renameVar e2 y s) (renameVar e3 y s)

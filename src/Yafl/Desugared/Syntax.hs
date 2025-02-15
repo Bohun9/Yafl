@@ -32,7 +32,7 @@ data Expr'
   | EBinop Ast.Binop Expr Expr
   | ELet Ast.Var Expr Expr
   | EApp Expr Expr
-  | EFun Ast.Var Ast.Var Ast.Type Ast.Type Expr Expr
+  | EFun Ast.Var Ast.Var Ast.Type Ast.Type Expr
   | ECtor Ast.Var [Expr]
   | ECase Expr [Clause]
   | EPatternMatchingSeq Expr Expr

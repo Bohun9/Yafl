@@ -169,15 +169,14 @@ toANFExpr' e t =
       e2' <- toANFExpr e2
       t <- toANFType $ T.typ e1
       buildExpr [(x, t, e1')] e2'
-    T.EFun f x t1 t2 e1 e2 -> do
-      e1' <- toANFExpr e1
-      e2' <- toANFExpr e2
+    T.EFun f x t1 t2 e -> do
+      e' <- toANFExpr e
       t1' <- toANFType t1
       t2' <- toANFType t2
       let t' = A.TArrow t1' t2'
       f' <- makeVar f t'
       x' <- makeVar x t1'
-      buildExpr [(f, t', A.EValue (A.VFun f' x' e1'))] e2'
+      return $ A.EValue $ A.VFun f' x' e'
     T.ECtor c es -> do
       tagId <- ctorTagId c
       repr <- ctorRepr c

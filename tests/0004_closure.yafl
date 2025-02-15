@@ -1,8 +1,5 @@
-let mul (x : int) : int -> int = 
-  let f (y : int) : int =
-    x * y
-  in
-  f
+let mul (x : int) (y : int) : int = 
+  x * y
 in
 
 let g (f : int -> int) : int =

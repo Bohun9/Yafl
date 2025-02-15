@@ -6,28 +6,22 @@ data tree =
   | Leaf
   | Node of tree * int * tree
 
-let tree_insert (t : tree) : int -> tree = 
-  let aux1 (n : int) : tree = 
-    match t with
-    | Leaf -> Node(Leaf, n, Leaf)
-    | Node(t1, x, t2) ->
-        if n < x then
-          Node(tree_insert t1 n, x, t2)
-        else
-          Node(t1, x, tree_insert t2 n)
-  in
-  aux1
+let tree_insert (t : tree) (n : int) : tree = 
+  match t with
+  | Leaf -> Node(Leaf, n, Leaf)
+  | Node(t1, x, t2) ->
+      if n < x then
+        Node(tree_insert t1 n, x, t2)
+      else
+        Node(t1, x, tree_insert t2 n)
 in
 
-let tree_to_list_fast (t : tree) : list -> list =
-  let aux2 (acc : list) : list = 
-    match t with
-    | Leaf -> acc
-    | Node(t1, x, t2) ->
-        let acc2 = tree_to_list_fast t2 acc in
-        tree_to_list_fast t1 (Cons(x, acc2))
-  in
-  aux2
+let tree_to_list_fast (t : tree) (acc : list) : list =
+  match t with
+  | Leaf -> acc
+  | Node(t1, x, t2) ->
+      let acc2 = tree_to_list_fast t2 acc in
+      tree_to_list_fast t1 (Cons(x, acc2))
 in
 let tree_to_list (t : tree) : list =
   tree_to_list_fast t Nil
@@ -40,21 +34,21 @@ let list_to_tree (xs : list) : tree =
 in
 
 let n = read_int Unit in
-let input_list (n : int) : list = 
+let read_list (n : int) : list = 
   if n = 0 then
     Nil
   else
     let x = read_int Unit in
-    Cons(x, input_list (n - 1))
+    Cons(x, read_list (n - 1))
 in
-let xs = input_list n in
+let xs = read_list n in
 
-let output_list (xs : list) : unit = 
+let print_list (xs : list) : unit = 
   match xs with
   | Nil -> print_newline Unit
   | Cons(x, xs) ->
       let _ = print_int x in
       let _ = print_space Unit in
-      output_list xs
+      print_list xs
 in
-output_list (tree_to_list (list_to_tree xs))
+print_list (tree_to_list (list_to_tree xs))

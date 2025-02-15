@@ -102,7 +102,18 @@ desugarExpr' e p =
     S.EBinop op e1 e2 -> D.EBinop <$> return op <*> desugarExpr e1 <*> desugarExpr e2
     S.ELet x e1 e2 -> D.ELet <$> return x <*> desugarExpr e1 <*> desugarExpr e2
     S.EApp e1 e2 -> D.EApp <$> desugarExpr e1 <*> desugarExpr e2
-    S.EFun f x t1 t2 e1 e2 -> D.EFun <$> return f <*> return x <*> return t1 <*> return t2 <*> desugarExpr e1 <*> desugarExpr e2
+    S.EFun f params t body e2 -> do
+      body' <- desugarExpr body
+      e2' <- desugarExpr e2
+      e1 <- curry f params t body'
+      return $ D.ELet f e1 e2'
+      where
+        curry g [(x, t)] t' body = return $ D.mkNode p $ D.EFun g x t t' body
+        curry g ((x1, t1) : params) t0 body = do
+          anon <- freshVar "anon"
+          body' <- curry anon params t0 body
+          let t2 = foldr (\t1 t2 -> D.mkNode p $ D.TArrow t1 t2) t0 (map snd params)
+          return $ D.mkNode p $ D.EFun g x1 t1 t2 body'
     S.ECtor c es -> D.ECtor <$> return c <*> mapM desugarExpr es
     S.EMatch e clauses -> do
       e' <- desugarExpr e

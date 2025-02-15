@@ -131,16 +131,15 @@ typecheckExpr' e p =
             else typeError p $ "This argument has type " ++ show t2 ++ ", but type " ++ show t3 ++ " is expected"
         _ -> typeError p "Only functions can be applied"
       return $ (T.EApp e1' e2', t)
-    D.EFun f x t1 t2 e1 e2 -> do
+    D.EFun f x t1 t2 e -> do
       t1' <- typecheckType t1
       t2' <- typecheckType t2
       let ft = T.TArrow t1' t2'
-      (e1', t) <- extendEnvMany [(f, ft), (x, t1')] $ typecheckExpr2 e1
-      if t /= t2'
+      (e', t') <- extendEnvMany [(f, ft), (x, t1')] $ typecheckExpr2 e
+      if t' /= t2'
         then typeError p "Function return type mismatch"
         else return ()
-      (e2', t') <- extendEnv f ft $ typecheckExpr2 e2
-      return $ (T.EFun f x t1' t2' e1' e2', t')
+      return $ (T.EFun f x t1' t2' e', T.TArrow t1' t2')
     D.ECtor c es -> do
       ets <- mapM typecheckExpr2 es
       let (es', ts) = unzip ets

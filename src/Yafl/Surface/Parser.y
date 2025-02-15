@@ -84,31 +84,38 @@ types1
     | type '*' types1 { $1 : $3 }
 
 expr
-    : INTEGER                                                { mkNode $1 (EInt $ tokenToInt $1) }
-    | LID                                                    { mkNode $1 (EVar $ tokenToVar $1) }
-    | expr "||" expr                                         { mkNode $2 (EBinop (ShortCircBinop Or) $1 $3) }
-    | expr "&&" expr                                         { mkNode $2 (EBinop (ShortCircBinop And) $1 $3) }
-    | expr '<' expr                                          { mkNode $2 (EBinop (EagerBinop Lt) $1 $3) }
-    | expr '>' expr                                          { mkNode $2 (EBinop (EagerBinop Gt) $1 $3) }
-    | expr "<=" expr                                         { mkNode $2 (EBinop (EagerBinop Le) $1 $3) }
-    | expr ">=" expr                                         { mkNode $2 (EBinop (EagerBinop Ge) $1 $3) }
-    | expr '=' expr                                          { mkNode $2 (EBinop (EagerBinop Eq) $1 $3) }
-    | expr '+' expr                                          { mkNode $2 (EBinop (EagerBinop Add) $1 $3) }
-    | expr '-' expr                                          { mkNode $2 (EBinop (EagerBinop Sub) $1 $3) }
-    | expr '*' expr                                          { mkNode $2 (EBinop (EagerBinop Mul) $1 $3) }
-    | expr '/' expr                                          { mkNode $2 (EBinop (EagerBinop Div) $1 $3) }
-    | LET LID '=' expr IN expr                               { mkNode $1 (ELet (tokenToVar $2) $4 $6) }
-    | LET LID '(' LID ':' type ')' ':' type '=' expr IN expr { mkNode $1 (EFun (tokenToVar $2) (tokenToVar $4) $6 $9 $11 $13) }
-    | expr expr %prec APP                                    { mkNode2 $1 (EApp $1 $2) } 
-    | '(' expr ')'                                           { $2 }
-    | UID                                                    { mkNode $1 (ECtor (tokenToVar $1) []) }
-    | UID '(' exprs1 ')'                                     { mkNode $1 (ECtor (tokenToVar $1) $3) }
-    | MATCH expr WITH clauses                                { mkNode $1 (EMatch $2 $4) }
-    | IF expr THEN expr ELSE expr                            { mkNode $1 (EIf $2 $4 $6) }
+    : INTEGER                                   { mkNode $1 (EInt $ tokenToInt $1) }
+    | LID                                       { mkNode $1 (EVar $ tokenToVar $1) }
+    | expr "||" expr                            { mkNode $2 (EBinop (ShortCircBinop Or) $1 $3) }
+    | expr "&&" expr                            { mkNode $2 (EBinop (ShortCircBinop And) $1 $3) }
+    | expr '<' expr                             { mkNode $2 (EBinop (EagerBinop Lt) $1 $3) }
+    | expr '>' expr                             { mkNode $2 (EBinop (EagerBinop Gt) $1 $3) }
+    | expr "<=" expr                            { mkNode $2 (EBinop (EagerBinop Le) $1 $3) }
+    | expr ">=" expr                            { mkNode $2 (EBinop (EagerBinop Ge) $1 $3) }
+    | expr '=' expr                             { mkNode $2 (EBinop (EagerBinop Eq) $1 $3) }
+    | expr '+' expr                             { mkNode $2 (EBinop (EagerBinop Add) $1 $3) }
+    | expr '-' expr                             { mkNode $2 (EBinop (EagerBinop Sub) $1 $3) }
+    | expr '*' expr                             { mkNode $2 (EBinop (EagerBinop Mul) $1 $3) }
+    | expr '/' expr                             { mkNode $2 (EBinop (EagerBinop Div) $1 $3) }
+    | LET LID '=' expr IN expr                  { mkNode $1 (ELet (tokenToVar $2) $4 $6) }
+    | LET LID params1 ':' type '=' expr IN expr { mkNode $1 (EFun (tokenToVar $2) $3 $5 $7 $9) }
+    | expr expr %prec APP                       { mkNode2 $1 (EApp $1 $2) } 
+    | '(' expr ')'                              { $2 }
+    | UID                                       { mkNode $1 (ECtor (tokenToVar $1) []) }
+    | UID '(' exprs1 ')'                        { mkNode $1 (ECtor (tokenToVar $1) $3) }
+    | MATCH expr WITH clauses                   { mkNode $1 (EMatch $2 $4) }
+    | IF expr THEN expr ELSE expr               { mkNode $1 (EIf $2 $4 $6) }
 
 exprs1
     : expr            { [$1] }
     | expr ',' exprs1 { $1 : $3 }
+
+param 
+    : '(' LID ':' type ')' { (tokenToVar $2, $4) }
+
+params1
+    : param         { [$1] }
+    | param params1 { $1 : $2 }
 
 clause 
     : '|' pat "->" expr { Clause $2 $4 }
