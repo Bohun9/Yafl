@@ -1,0 +1,7 @@
+let f (_ : unit) : int = 
+  let _ = print_int 42 in
+  3
+in
+
+let x = 1 = 1 || 2 = f Unit in // short-circut
+Unit

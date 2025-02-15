@@ -1,5 +1,0 @@
-let add (x : int) : int -> int = 
-  let f (y : int) : int = x + y in f
-in
-let add1 = add 1 in
-add1 2

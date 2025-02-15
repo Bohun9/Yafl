@@ -7,4 +7,4 @@ let sum (xs : list) : int =
   | Nil -> 0
   | Cons(x, xs) -> x + sum xs
 in
-sum (Cons(1, Cons(2, Cons(3, Cons(4, Nil)))))
+print_int (sum (Cons(1, Cons(2, Cons(3, Cons(100, Nil)))))) //@stdout:106

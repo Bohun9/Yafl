@@ -4,4 +4,4 @@ let fact (n : int) : int =
   else
     n * fact (n - 1)
 in
-fact 4
+print_int (fact 10) //@stdout:3628800

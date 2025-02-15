@@ -11,6 +11,7 @@ $alphanum = [a-zA-Z0-9_]
 
 tokens :-
   $white+ ;
+  "//".* ;
 
   "+"                 { \p s -> Token p PLUS }
   "-"                 { \p s -> Token p MINUS }

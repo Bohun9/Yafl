@@ -1,0 +1,15 @@
+data rgb =
+  | R
+  | G
+  | B
+
+let color_computation (_ : unit) : rgb = 
+  B
+in
+
+match color_computation Unit with
+| R -> print_int 0
+| G -> print_int 1
+
+//@exitcode:1
+//@stderr:runtime error: non-exhaustive pattern matching

@@ -1,0 +1,19 @@
+let mul (x : int) : int -> int = 
+  let f (y : int) : int =
+    x * y
+  in
+  f
+in
+
+let g (f : int -> int) : int =
+  f (f (f 1))
+in
+
+let _ = print_int (g (mul 2)) in //@stdout:8
+
+let mul3 = mul 3 in
+let mul4 = mul 4 in
+
+let _ = print_int (mul3 100) in //@stdout:300
+let _ = print_int (mul4 100) in //@stdout:400
+Unit

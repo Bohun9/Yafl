@@ -1,0 +1,28 @@
+data list =
+  | Nil
+  | Cons of int * list
+
+let remove_dups (xs : list) : list =
+  match xs with
+  | Nil -> Nil
+  | Cons(x, Nil) -> Cons(x, Nil)
+  | Cons(x1, Cons(x2, xs)) ->
+      if x1 = x2 then
+          remove_dups Cons(x2, xs)
+      else
+          Cons(x1, remove_dups Cons(x2, xs))
+in
+
+let output_list (xs : list) : unit =
+  match xs with
+  | Nil -> Unit
+  | Cons(x, xs) ->
+      let _ = print_int x in
+      output_list xs
+in
+
+let xs = remove_dups Cons(1, Cons(1, Cons(2, Cons(3, Cons(3, Nil))))) in
+let ys = remove_dups Cons(1, Cons(1, Cons(1, Cons(1, Cons(1, Nil))))) in
+let _ = output_list xs in //@stdout:123 
+let _ = output_list ys in //@stdout:1 
+Unit

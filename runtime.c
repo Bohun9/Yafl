@@ -5,32 +5,32 @@
 #define UNIT 0
 
 void match_error() {
-    printf("runtime error: non-exhaustive pattern matching\n");
+    fprintf(stderr, "runtime error: non-exhaustive pattern matching\n");
     exit(1);
 }
 
 void division_error() {
-    printf("runtime error: division by zero\n");
+    fprintf(stderr, "runtime error: division by zero\n");
     exit(1);
 }
 
-int64_t print_int(void* _, int64_t n) {
+int64_t print_int(void* clo, int64_t n) {
     printf("%" PRId64, n);
     return UNIT;
 }
 
-int64_t read_int(void* _1, int64_t unit) {
+int64_t read_int(void* clo, int64_t unit) {
     int64_t n;
     scanf("%" PRId64, &n);
     return n;
 }
 
-int64_t print_newline(void* _, int64_t unit) {
+int64_t print_newline(void* clo, int64_t unit) {
     printf("\n");
     return UNIT;
 }
 
-int64_t print_space(void* _, int64_t unit) {
+int64_t print_space(void* clo, int64_t unit) {
     printf(" ");
     return UNIT;
 }
