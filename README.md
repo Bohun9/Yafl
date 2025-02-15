@@ -9,7 +9,7 @@ Yafl is a simple compiler for an ML-like functional language targeting LLVM.
 
 ### Dependencies
 - GHC version 8.10.7: `llvm-hs-pure` doesn't work for newer GHC versions.
-- Clang: The Clang executable must be in your system's `PATH` to generate LLVM code.
+- Clang: The Clang executable must be in your system's `PATH` to compile LLVM code.
 
 ### Running the Compiler
 ```
