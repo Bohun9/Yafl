@@ -51,3 +51,19 @@ freshVar hint = do
   modify (\s -> s {freshVarId = id + 1})
   let x = "_" ++ hint ++ "_" ++ show id
   return $ (x, C.VLocalVar x)
+
+extendVarTable :: A.Var -> A.Tag -> EscapeAnal a -> EscapeAnal a
+extendVarTable x tag m = do
+  level <- reader curLevel
+  local (\r -> r {varTable = Map.insert x (UserDefined level tag) (varTable r)}) m
+
+lookupVarTable :: A.Var -> EscapeAnal VarEntry
+lookupVarTable x = do
+  varTable <- reader varTable
+  case Map.lookup x varTable of
+    Just r -> return r
+    Nothing -> error "internal error"
+
+insertVarAccess :: A.Tag -> VarAccess -> EscapeAnal ()
+insertVarAccess tag access =
+  modify (\s -> s {varAccess = Map.insert tag access (varAccess s)})

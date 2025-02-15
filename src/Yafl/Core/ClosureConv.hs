@@ -49,8 +49,8 @@ convertValue v k = do
           envPairs <- sequence $ replicate (diff - 1) $ M.freshVar "loaded_env"
           let (envs, envs') = unzip envPairs
           (v, v') <- M.freshVar "v"
-          let es = map (\envVal -> C.EFetch envVal 0) (init $ enclosingEnvValue : envs')
-          let e = C.EFetch (last $ enclosingEnvValue : envs') index
+          let es = map (\envVal -> C.EFetch envVal 0) (init $ outerEnvValue : envs')
+          let e = C.EFetch (last $ outerEnvValue : envs') index
           e' <- k v'
           return $
             buildLetExpr
@@ -81,7 +81,7 @@ convertValue v k = do
           [(clo, C.EAllocRecord $ recTy)]
           ( buildSeqExpr
               [ C.EStore clo' 0 (C.VGlobalFun fGlobalName paramTypes returnType),
-                C.EStore clo' 1 voidCurEnvValue
+                C.EStore clo' 1 rawCurEnvValue
               ]
               e'
           )
@@ -139,15 +139,15 @@ convertExpr e =
               v2
               ( \v2' -> do
                   let codeName = "_code"
-                      voidCloName = "_void_clo"
+                      rawCloName = "_raw_clo"
                   return $
                     buildLetExpr
                       [ (codeName, C.EFetch v1' 0),
-                        (voidCloName, C.ECast voidPointer v1')
+                        (rawCloName, C.ECast voidPointer v1')
                       ]
                       ( C.EApp
                           (C.VLocalVar codeName)
-                          [C.VLocalVar voidCloName, v2']
+                          [C.VLocalVar rawCloName, v2']
                       )
               )
         )
@@ -159,8 +159,8 @@ convertExpr e =
             es' <- mapM convertExpr es
             return $ C.ESwitch v' (zip tags es')
         )
-    A.EPatternMatchingSeq e1 e2 -> C.EPatternMatchingSeq <$> convertExpr e1 <*> convertExpr e2
-    A.EPatternMatchingError -> return C.EPatternMatchingError
+    A.EMatchSeq e1 e2 -> C.EMatchSeq <$> convertExpr e1 <*> convertExpr e2
+    A.EMatchError -> return C.EMatchError
     A.EMakeRecord ts vs -> do
       (r, r') <- M.freshVar "r"
       convertValues
@@ -204,8 +204,8 @@ collectEscapingVars e =
     A.EShortCircBinop _ e1 e2 -> mapM_ collectEscapingVars [e1, e2]
     A.EApp _ _ -> return ()
     A.ESwitch _ cs -> mapM_ collectEscapingVars (map snd cs)
-    A.EPatternMatchingSeq e1 e2 -> mapM_ collectEscapingVars [e1, e2]
-    A.EPatternMatchingError -> return ()
+    A.EMatchSeq e1 e2 -> mapM_ collectEscapingVars [e1, e2]
+    A.EMatchError -> return ()
     A.EMakeRecord _ _ -> return ()
     A.EFetch _ _ -> return ()
     A.ECast _ _ -> return ()
@@ -223,17 +223,17 @@ cloArgName = "_clo_arg"
 cloArgValue :: C.Value
 cloArgValue = C.VLocalVar cloArgName
 
-enclosingEnvVoidName :: C.Var
-enclosingEnvVoidName = "_void_enclosing_env"
+rawOuterEnvName :: C.Var
+rawOuterEnvName = "_raw_outer_env"
 
-enclosingEnvVoidValue :: C.Value
-enclosingEnvVoidValue = C.VLocalVar enclosingEnvVoidName
+rawOuterEnvValue :: C.Value
+rawOuterEnvValue = C.VLocalVar rawOuterEnvName
 
-enclosingEnvName :: C.Var
-enclosingEnvName = "_enclosing_env"
+outerEnvName :: C.Var
+outerEnvName = "_outer_env"
 
-enclosingEnvValue :: C.Value
-enclosingEnvValue = C.VLocalVar enclosingEnvName
+outerEnvValue :: C.Value
+outerEnvValue = C.VLocalVar outerEnvName
 
 curEnvName :: C.Var
 curEnvName = "_cur_env"
@@ -241,11 +241,11 @@ curEnvName = "_cur_env"
 curEnvValue :: C.Value
 curEnvValue = C.VLocalVar curEnvName
 
-voidCurEnvName :: C.Var
-voidCurEnvName = "_void_cur_env"
+rawCurEnvName :: C.Var
+rawCurEnvName = "_raw_cur_env"
 
-voidCurEnvValue :: C.Value
-voidCurEnvValue = C.VLocalVar voidCurEnvName
+rawCurEnvValue :: C.Value
+rawCurEnvValue = C.VLocalVar rawCurEnvName
 
 topLevelFunName :: C.Var
 topLevelFunName = "__yafl_toplevel"
@@ -255,9 +255,9 @@ createHoistedFun
   fi@A.VarInfo {A.name = f, A.tag = fTag, A.typ = fType}
   xi@A.VarInfo {A.name = x, A.tag = xTag, A.typ = xType}
   e = do
-    enclosingEnvType <- reader M.curEnvType
+    outerEnvType <- reader M.curEnvType
     envPayloadTypes <- envPayloadTypes fi xi e
-    let curEnvType = C.TStruct $ enclosingEnvType : envPayloadTypes
+    let curEnvType = C.TStruct $ outerEnvType : envPayloadTypes
         curEnvTypePtr = C.TPointer curEnvType
     fEnvUpdate <- varEnvUpdate fi
     xEnvUpdate <- varEnvUpdate xi
@@ -266,13 +266,13 @@ createHoistedFun
         body =
           buildLetExpr
             [ (f, C.ECast (convertType fType) cloArgValue),
-              (enclosingEnvVoidName, C.EFetch f' 1),
-              (enclosingEnvName, C.ECast enclosingEnvType enclosingEnvVoidValue),
+              (rawOuterEnvName, C.EFetch f' 1),
+              (outerEnvName, C.ECast outerEnvType rawOuterEnvValue),
               (curEnvName, C.EAllocRecord curEnvType),
-              (voidCurEnvName, C.ECast voidPointer curEnvValue)
+              (rawCurEnvName, C.ECast voidPointer curEnvValue)
             ]
             ( buildSeqExpr
-                ( (C.EStore curEnvValue 0 enclosingEnvValue)
+                ( (C.EStore curEnvValue 0 outerEnvValue)
                     : fEnvUpdate
                     ++ xEnvUpdate
                 )

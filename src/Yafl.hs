@@ -6,8 +6,8 @@ where
 
 import qualified LLVM.AST
 import qualified Yafl.ANF.ToANF as ANF
-import qualified Yafl.CodeGen.LLVM as CG
-import qualified Yafl.Core.ClosureConv as CC
+import qualified Yafl.CodeGen.LLVM as CodeGen
+import qualified Yafl.Core.ClosureConv as Core
 import qualified Yafl.Core.Pretty
 import qualified Yafl.Core.Syntax as Core
 import qualified Yafl.Desugared.Desugar as Desugar
@@ -17,7 +17,7 @@ import qualified Yafl.Typed.Typecheck as Typecheck
 
 corePipeline :: String -> Core.Program
 corePipeline =
-  CC.closureConv
+  Core.closureConv
     . ANF.toANF
     . Typecheck.typecheck
     . Desugar.desugar
@@ -25,4 +25,4 @@ corePipeline =
     . Lexer.alexScanTokens
 
 llvmPipeline :: String -> LLVM.AST.Module
-llvmPipeline = CG.codeGen . corePipeline
+llvmPipeline = CodeGen.codeGen . corePipeline

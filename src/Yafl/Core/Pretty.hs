@@ -34,9 +34,9 @@ instance Pretty Expr where
     pretty "Switch" <+> pretty cond <> line <> vsep (map casePretty cases)
     where
       casePretty (i, expr) = pretty "case" <+> pretty i <+> pretty "->" <+> pretty expr
-  pretty (EPatternMatchingSeq e1 e2) =
+  pretty (EMatchSeq e1 e2) =
     pretty "MatchSeq" <+> (line <> pretty "*" <+> pretty e1 <> line <> pretty "*" <+> pretty e2)
-  pretty EPatternMatchingError = pretty "PatternMatchingError"
+  pretty EMatchError = pretty "PatternMatchingError"
   pretty (EAllocRecord ty) = pretty "AllocRecord" <+> pretty ty
   pretty (ESeq e1 e2) =
     pretty "Seq" <+> pretty e1 <> line <> pretty e2

@@ -8,22 +8,6 @@ import qualified Yafl.ANF.Syntax as A
 import qualified Yafl.ANF.ToANF
 import qualified Yafl.Core.Monad as M
 
-extendVarTable :: A.Var -> A.Tag -> M.EscapeAnal a -> M.EscapeAnal a
-extendVarTable x tag m = do
-  level <- reader M.curLevel
-  local (\r -> r {M.varTable = Map.insert x (M.UserDefined level tag) (M.varTable r)}) m
-
-lookupVarTable :: A.Var -> M.EscapeAnal M.VarEntry
-lookupVarTable x = do
-  varTable <- reader M.varTable
-  case Map.lookup x varTable of
-    Just r -> return r
-    Nothing -> error "internal error"
-
-insertVarAccess :: A.Tag -> M.VarAccess -> M.EscapeAnal ()
-insertVarAccess tag access =
-  modify (\s -> s {M.varAccess = Map.insert tag access (M.varAccess s)})
-
 varEscapes :: M.Level -> A.Tag -> M.EscapeAnal M.EnvIndex
 varEscapes level tag = do
   varEnvIndex <- gets M.varEnvIndex
@@ -55,24 +39,24 @@ analyseValue v =
     A.VInt _ -> return ()
     A.VVar A.VarInfo {A.name = x, A.tag = useTag} -> do
       useLevel <- reader M.curLevel
-      entry <- lookupVarTable x
+      entry <- M.lookupVarTable x
       case entry of
         M.UserDefined defLevel defTag ->
           if defLevel < useLevel
             then do
               defVarIndex <- varEscapes defLevel defTag
               let levelDiff (M.Level a) (M.Level b) = a - b
-              insertVarAccess
+              M.insertVarAccess
                 useTag
                 M.EnvAccess
                   { M.levelDiff = levelDiff useLevel defLevel,
                     M.envIndex = defVarIndex
                   }
-            else insertVarAccess useTag M.LocalAccess
+            else M.insertVarAccess useTag M.LocalAccess
         M.BuiltinFun t ->
-          insertVarAccess useTag $ M.BuiltinFunAccess t
+          M.insertVarAccess useTag $ M.BuiltinFunAccess t
     A.VFun A.VarInfo {A.name = f, A.tag = fTag} A.VarInfo {A.name = x, A.tag = xTag} e ->
-      incLevel $ extendVarTable f fTag $ extendVarTable x xTag $ analyseExpr e
+      incLevel $ M.extendVarTable f fTag $ M.extendVarTable x xTag $ analyseExpr e
 
 analyseExpr :: A.Expr -> M.EscapeAnal ()
 analyseExpr e =
@@ -80,13 +64,13 @@ analyseExpr e =
     A.EValue v -> analyseValue v
     A.ELet A.VarInfo {A.name = x, A.tag = tag} e1 e2 -> do
       analyseExpr e1
-      extendVarTable x tag $ analyseExpr e2
+      M.extendVarTable x tag $ analyseExpr e2
     A.EEagerBinop _ v1 v2 -> analyseValue v1 >> analyseValue v2
     A.EShortCircBinop _ e1 e2 -> analyseExpr e1 >> analyseExpr e2
     A.EApp v1 v2 -> analyseValue v1 >> analyseValue v2
     A.ESwitch v cs -> analyseValue v >> mapM_ analyseExpr (map snd cs)
-    A.EPatternMatchingSeq e1 e2 -> analyseExpr e1 >> analyseExpr e2
-    A.EPatternMatchingError -> return ()
+    A.EMatchSeq e1 e2 -> analyseExpr e1 >> analyseExpr e2
+    A.EMatchError -> return ()
     A.EMakeRecord _ vs -> mapM_ analyseValue vs
     A.EFetch v _ -> analyseValue v
     A.ECast _ v -> analyseValue v

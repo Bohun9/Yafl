@@ -64,7 +64,7 @@ executable yafl
     -- other-extensions:
 
     -- Other library packages from which modules are imported.
-    build-depends: base ^>=4.14.3.0
+    build-depends: base
                  , yafl
                  , text
                  , llvm-hs-pretty ^>=0.9.0.0
@@ -81,7 +81,7 @@ executable yafl
 
 library
     -- Other library packages from which modules are imported.
-    build-depends: base ^>=4.14.3.0
+    build-depends: base
                  , array
                  , prettyprinter
                  , text
@@ -109,6 +109,7 @@ library
                  , Yafl.ANF.Syntax
                  , Yafl.ANF.ToANF
                  , Yafl.ANF.Builtins
+                 , Yafl.ANF.Monad
                  , Yafl.Core.Syntax
                  , Yafl.Core.Monad
                  , Yafl.Core.EscapeAnal

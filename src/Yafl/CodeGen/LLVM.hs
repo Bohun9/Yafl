@@ -46,21 +46,21 @@ externs =
       (\(n, argTys, retTy) -> (n, map genLLVMType argTys, genLLVMType retTy))
       Core.Builtins.builtinFuns
 
-functionPointerTy :: [AST.Type] -> AST.Type -> AST.Type
-functionPointerTy ts rt =
-  (AST.Type.ptr (AST.FunctionType rt ts False))
+ptrToFunctionType :: [AST.Type] -> AST.Type -> AST.Type
+ptrToFunctionType ts rt =
+  AST.Type.ptr (AST.FunctionType rt ts False)
 
-functionPointerOperand :: String -> [AST.Type] -> AST.Type -> AST.Operand
-functionPointerOperand n ts rt =
+functionPtrOperand :: String -> [AST.Type] -> AST.Type -> AST.Operand
+functionPtrOperand n ts rt =
   AST.ConstantOperand $
     AST.Const.GlobalReference
-      (functionPointerTy ts rt)
+      (ptrToFunctionType ts rt)
       (AST.mkName n)
 
 externOperand :: String -> AST.Operand
 externOperand x =
   case find (\(n, _, _) -> n == x) externs of
-    Just (n, ts, t) -> functionPointerOperand n ts t
+    Just (n, ts, t) -> functionPtrOperand n ts t
     Nothing -> error "interal error"
 
 malloc, matchError, divisionError :: AST.Operand
@@ -88,7 +88,10 @@ codeGenValue v =
         Just o -> return o
         Nothing -> error "internal error"
     C.VGlobalFun f ts t ->
-      return $ functionPointerOperand f (map genLLVMType ts) $ genLLVMType t
+      return $ functionPtrOperand f (map genLLVMType ts) $ genLLVMType t
+
+freshBlockName :: CodeGen AST.Name
+freshBlockName = IR.freshName (toShortBS "L")
 
 codeGenExpr :: C.Expr -> CodeGen AST.Operand
 codeGenExpr e =
@@ -105,8 +108,8 @@ codeGenExpr e =
         C.Sub -> Instr.sub o1 o2
         C.Mul -> Instr.mul o1 o2
         C.Div -> do
-          errorBlock <- IR.freshName (toShortBS "L")
-          successBlock <- IR.freshName (toShortBS "L")
+          errorBlock <- freshBlockName
+          successBlock <- freshBlockName
           zeroCheck <- Instr.icmp AST.IntegerPredicate.EQ o2 (Const.int64 0)
           Instr.condBr zeroCheck errorBlock successBlock
           IR.emitBlockStart errorBlock
@@ -120,8 +123,8 @@ codeGenExpr e =
         C.Ge -> Instr.icmp AST.IntegerPredicate.SGE o1 o2
         C.Eq -> Instr.icmp AST.IntegerPredicate.EQ o1 o2
     C.EShortCircBinop op e1 e2 -> do
-      rhsBlock <- IR.freshName (toShortBS "L")
-      mergeBlock <- IR.freshName (toShortBS "L")
+      rhsBlock <- freshBlockName
+      mergeBlock <- freshBlockName
       o1 <- codeGenExpr e1
       b1 <- IR.currentBlock
       case op of
@@ -141,8 +144,8 @@ codeGenExpr e =
     C.ESwitch v clauses -> do
       o <- codeGenValue v
       dftLabel <- reader defaultSwitchLabel
-      blocks <- sequence $ replicate (length clauses) $ IR.freshName (toShortBS "L")
-      mergeBlock <- IR.freshName (toShortBS "L")
+      blocks <- sequence $ replicate (length clauses) freshBlockName
+      mergeBlock <- freshBlockName
       let (tags, es) = unzip clauses
       let consts = map (AST.Const.Int 64) tags
       Instr.switch o dftLabel (zip consts blocks)
@@ -158,9 +161,9 @@ codeGenExpr e =
           (zip blocks es)
       IR.emitBlockStart mergeBlock
       Instr.phi clauseOutputs
-    C.EPatternMatchingSeq e1 e2 -> do
-      failBlock <- IR.freshName (toShortBS "L")
-      mergeBlock <- IR.freshName (toShortBS "L")
+    C.EMatchSeq e1 e2 -> do
+      failBlock <- freshBlockName
+      mergeBlock <- freshBlockName
       o1 <- local (\r -> r {defaultSwitchLabel = failBlock}) $ codeGenExpr e1
       b1 <- IR.currentBlock
       Instr.br mergeBlock
@@ -170,7 +173,7 @@ codeGenExpr e =
       Instr.br mergeBlock
       IR.emitBlockStart mergeBlock
       Instr.phi [(o1, b1), (o2, b2)]
-    C.EPatternMatchingError ->
+    C.EMatchError ->
       Instr.call matchError []
     C.EAllocRecord t -> do
       let t' = genLLVMType t
@@ -191,9 +194,9 @@ codeGenExpr e =
       o <- codeGenValue v
       Instr.bitcast o $ genLLVMType t
     C.EIf e1 e2 e3 -> do
-      thenBlock <- IR.freshName (toShortBS "L")
-      elseBlock <- IR.freshName (toShortBS "L")
-      mergeBlock <- IR.freshName (toShortBS "L")
+      thenBlock <- freshBlockName
+      elseBlock <- freshBlockName
+      mergeBlock <- freshBlockName
       o1 <- codeGenExpr e1
       Instr.condBr o1 thenBlock elseBlock
       IR.emitBlockStart thenBlock

@@ -43,8 +43,8 @@ data Expr
   | EShortCircBinop Ast.ShortCircBinop Expr Expr
   | EApp Value Value
   | ESwitch Value [(Integer, Expr)]
-  | EPatternMatchingSeq Expr Expr
-  | EPatternMatchingError
+  | EMatchSeq Expr Expr
+  | EMatchError
   | EMakeRecord [Type] [Value]
   | EFetch Value Integer
   | ECast Type Value

@@ -69,5 +69,5 @@ main = do
         else do
           let tmpFile = "tmp.ll"
           writeFile tmpFile llvmSource
-          callProcess "clang-14" [tmpFile, "runtime.c", "-o", outputPath]
+          callProcess "clang" [tmpFile, "runtime.c", "-o", outputPath]
           removeFile tmpFile

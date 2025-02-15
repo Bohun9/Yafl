@@ -35,8 +35,8 @@ data Expr'
   | EFun Ast.Var Ast.Var Ast.Type Ast.Type Expr
   | ECtor Ast.Var [Expr]
   | ECase Expr [Clause]
-  | EPatternMatchingSeq Expr Expr
-  | EPatternMatchingError
+  | EMatchSeq Expr Expr
+  | EMatchError
   | EIf Expr Expr Expr
   deriving (Show)
 

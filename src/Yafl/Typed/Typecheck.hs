@@ -186,22 +186,22 @@ typecheckExpr' e p =
             types
           return $ (T.ECase e' clauses', head types)
         _ -> typeError p "Expected algebraic data type in a match expression"
-    D.EPatternMatchingSeq e1 D.Node {D.pos = p, D.value = D.EPatternMatchingError} -> do
+    D.EMatchSeq e1 D.Node {D.pos = p, D.value = D.EMatchError} -> do
       (e1', t1) <- typecheckExpr2 e1
       return
-        ( T.EPatternMatchingSeq
+        ( T.EMatchSeq
             e1'
-            T.Annot {T.typ = T.TInt, T.value = T.EPatternMatchingError},
+            T.Annot {T.typ = T.TInt, T.value = T.EMatchError},
           t1
         )
-    D.EPatternMatchingSeq e1 e2 -> do
+    D.EMatchSeq e1 e2 -> do
       (e1', t1) <- typecheckExpr2 e1
       (e2', t2) <- typecheckExpr2 e2
       if t1 /= t2
         then typeError p $ "Match clauses have different types"
         else return ()
-      return (T.EPatternMatchingSeq e1' e2', t1)
-    D.EPatternMatchingError -> undefined
+      return (T.EMatchSeq e1' e2', t1)
+    D.EMatchError -> undefined
     D.EIf e1 e2 e3 -> do
       (e1', t1) <- typecheckExpr2 e1
       (e2', t2) <- typecheckExpr2 e2

@@ -35,8 +35,8 @@ data Expr
   | EShortCircBinop Ast.ShortCircBinop Expr Expr
   | EApp Value [Value]
   | ESwitch Value [(Integer, Expr)]
-  | EPatternMatchingSeq Expr Expr
-  | EPatternMatchingError
+  | EMatchSeq Expr Expr
+  | EMatchError
   | EAllocRecord Type
   | ESeq Expr Expr
   | EStore Value Integer Value

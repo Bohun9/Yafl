@@ -83,11 +83,11 @@ matchGroup us (CtorGroup ctorEqs) = matchCtor us ctorEqs
 match :: [S.Var] -> [Equation] -> PMCompiler D.Expr
 match [] [] = error "internal error"
 match [] (Equation _ e : _) = desugarExpr e
-match (_ : _) [] = return $ D.mkNode dummyPos D.EPatternMatchingError
+match (_ : _) [] = return $ D.mkNode dummyPos D.EMatchError
 match (u : us) eqs = do
   es' <- mapM (matchGroup (u : us)) (groupEquations eqs)
   let (e : es) = reverse es'
-  return $ foldl (\acc e -> D.mkNode dummyPos $ D.EPatternMatchingSeq e acc) e es
+  return $ foldl (\acc e -> D.mkNode dummyPos $ D.EMatchSeq e acc) e es
 
 desugarExpr :: S.Expr -> PMCompiler D.Expr
 desugarExpr S.Node {S.pos = p, S.value = e} = do
@@ -119,7 +119,7 @@ desugarExpr' e p =
       e' <- desugarExpr e
       u <- freshVar "match"
       e1 <- match [u] (map (\(S.Clause p e) -> Equation [p] e) clauses)
-      let e2 = D.mkNode p $ D.EPatternMatchingSeq e1 (D.mkNode p D.EPatternMatchingError)
+      let e2 = D.mkNode p $ D.EMatchSeq e1 (D.mkNode p D.EMatchError)
           e3 = D.ELet u e' e2
       return e3
     S.EIf e1 e2 e3 -> D.EIf <$> desugarExpr e1 <*> desugarExpr e2 <*> desugarExpr e3
