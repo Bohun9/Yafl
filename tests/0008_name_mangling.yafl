@@ -1,0 +1,5 @@
+let f (x : int) : int = x in
+let f (x : int) : int = x in
+let malloc (x : int) : int = x in
+let yafl_toplevel (x : int) : int = x in
+Unit

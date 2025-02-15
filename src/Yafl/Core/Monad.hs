@@ -49,5 +49,5 @@ freshVar :: String -> ClosureConv (C.Var, C.Value)
 freshVar hint = do
   id <- gets freshVarId
   modify (\s -> s {freshVarId = id + 1})
-  let x = "_" ++ hint ++ show id
+  let x = "_" ++ hint ++ "_" ++ show id
   return $ (x, C.VLocalVar x)

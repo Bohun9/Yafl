@@ -247,6 +247,9 @@ voidCurEnvName = "_void_cur_env"
 voidCurEnvValue :: C.Value
 voidCurEnvValue = C.VLocalVar voidCurEnvName
 
+topLevelFunName :: C.Var
+topLevelFunName = "__yafl_toplevel"
+
 createHoistedFun :: A.VarInfo -> A.VarInfo -> A.Expr -> M.ClosureConv (C.Var, [C.Param], C.Type)
 createHoistedFun
   fi@A.VarInfo {A.name = f, A.tag = fTag, A.typ = fType}
@@ -278,21 +281,22 @@ createHoistedFun
         params = [C.Param cloArgName voidPointer, C.Param x $ convertType xType]
         (A.TArrow _ returnType) = fType
         returnType' = convertType returnType
-        hoistedFun =
+    fFresh <- if f == topLevelFunName then return f else fst <$> M.freshVar f
+    let hoistedFun =
           C.TopLevelFun
-            { C.name = f,
+            { C.name = fFresh,
               C.params = params,
               C.returnType = returnType',
               C.body = body
             }
     tell [hoistedFun]
-    return (f, params, returnType')
+    return (fFresh, params, returnType')
 
 convertProgram :: A.Program -> M.ClosureConv ()
 convertProgram (A.Program topLevelExpr) = do
   let mainFunVar =
         A.VarInfo
-          { A.name = "yafl_toplevel",
+          { A.name = topLevelFunName,
             A.tag = A.Tag (-1),
             A.typ = A.TArrow A.TInt A.TInt
           }

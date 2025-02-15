@@ -39,7 +39,6 @@ extendVarTableMany bs m = foldr (\(x, o) -> extendVarTable x o) m bs
 externs :: [(String, [AST.Type], AST.Type)]
 externs =
   [ ("malloc", [AST.Type.i32], AST.Type.ptr AST.Type.i8),
-    ("exit", [AST.Type.i32], AST.Type.void),
     ("match_error", [], AST.Type.void),
     ("division_error", [], AST.Type.void)
   ]
@@ -64,9 +63,8 @@ externOperand x =
     Just (n, ts, t) -> functionPointerOperand n ts t
     Nothing -> error "interal error"
 
-malloc, exit, matchError, divisionError :: AST.Operand
+malloc, matchError, divisionError :: AST.Operand
 malloc = externOperand "malloc"
-exit = externOperand "exit"
 matchError = externOperand "match_error"
 divisionError = externOperand "division_error"
 

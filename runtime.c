@@ -40,12 +40,12 @@ struct toplevel_closure {
     void* env;     // toplevel saves it in its environment
 };
 
-int64_t yafl_toplevel(void* clo, int64_t arg);
+int64_t __yafl_toplevel(void* clo, int64_t arg);
 
 int main() {
     struct toplevel_closure closure = {
         .fun_ptr = NULL,
         .env = NULL
     };
-    return yafl_toplevel((void*) &closure, 0);
+    return __yafl_toplevel((void*) &closure, 0);
 }
