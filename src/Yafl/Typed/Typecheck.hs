@@ -226,7 +226,10 @@ typecheckProgram :: D.Program -> Typecheck T.Expr
 typecheckProgram (D.Program tdefs e) = do
   insertBuiltinTypes
   typecheckTypeDefs tdefs
-  typecheckExpr e
+  (e', t) <- typecheckExpr2 e
+  case t of
+    T.TAdt "unit" -> return e'
+    _ -> typeError (D.pos e) $ "The final value of the program must have type unit"
 
 typecheck :: D.Program -> T.Program
 typecheck prog =
