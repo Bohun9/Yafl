@@ -1,5 +1,6 @@
 module Yafl.Core.ClosureConv where
 
+import Control.Monad.Cont
 import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Trans.Class (lift)
@@ -37,15 +38,15 @@ buildSeqExpr :: [C.Expr] -> C.Expr -> C.Expr
 buildSeqExpr es e =
   foldr C.ESeq e es
 
-convertValue :: A.Value -> (C.Value -> M.ClosureConv C.Expr) -> M.ClosureConv C.Expr
-convertValue v k = do
+convertValue :: A.Value -> ContT C.Expr M.ClosureConv C.Value
+convertValue v = do
   case v of
-    A.VInt n -> k (C.VInt n)
+    A.VInt n -> return $ C.VInt n
     A.VVar A.VarInfo {A.name = x, A.tag = tag} -> do
       varAccess <- gets M.varAccess
       case Map.lookup tag varAccess of
-        Just M.LocalAccess -> k $ C.VLocalVar x
-        Just M.EnvAccess {M.levelDiff = diff, M.envIndex = M.EnvIndex index} -> do
+        Just M.LocalAccess -> return $ C.VLocalVar x
+        Just M.EnvAccess {M.levelDiff = diff, M.envIndex = M.EnvIndex index} -> ContT $ \k -> do
           envPairs <- sequence $ replicate (diff - 1) $ M.freshVar "loaded_env"
           let (envs, envs') = unzip envPairs
           (v, v') <- M.freshVar "v"
@@ -56,7 +57,7 @@ convertValue v k = do
             buildLetExpr
               (zip envs es ++ [(v, e)])
               e'
-        Just (M.BuiltinFunAccess t) -> do
+        Just (M.BuiltinFunAccess t) -> ContT $ \k -> do
           let (A.TArrow t1 t2) = t
           let (C.TPointer recTy) = convertType t
           (clo, clo') <- M.freshVar "clo"
@@ -70,7 +71,7 @@ convertValue v k = do
                   e'
               )
         Nothing -> error "internal error"
-    A.VFun f x e -> do
+    A.VFun f x e -> ContT $ \k -> do
       (fGlobalName, params, returnType) <- createHoistedFun f x e
       let paramTypes = map (\(C.Param _ t) -> t) params
       let (C.TPointer recTy) = convertType $ A.typ f
@@ -86,13 +87,15 @@ convertValue v k = do
               e'
           )
 
-convertValues :: [A.Value] -> ([C.Value] -> M.ClosureConv C.Expr) -> M.ClosureConv C.Expr
-convertValues [] k = k []
-convertValues (v : vs) k =
-  convertValue
-    v
+convertValues :: [A.Value] -> ContT C.Expr M.ClosureConv [C.Value]
+convertValues [] = return []
+convertValues (v : vs) = ContT $ \k ->
+  runContT
+    (convertValue v)
     ( \v' ->
-        convertValues vs (\vs' -> k $ v' : vs')
+        runContT
+          (convertValues vs)
+          (\vs' -> k $ v' : vs')
     )
 
 varEnvUpdate :: A.VarInfo -> M.ClosureConv [C.Expr]
@@ -107,7 +110,7 @@ varEnvUpdate A.VarInfo {A.name = x, A.tag = tag} = do
 convertExpr :: A.Expr -> M.ClosureConv C.Expr
 convertExpr e =
   case e of
-    A.EValue v -> convertValue v (\x -> return $ C.EValue x)
+    A.EValue v -> runContT (convertValue v) (\x -> return $ C.EValue x)
     A.ELet xi@A.VarInfo {A.name = x, A.tag = tag} e1 e2 -> do
       e1' <- convertExpr e1
       e2' <- convertExpr e2
@@ -120,52 +123,49 @@ convertExpr e =
               e2'
           )
     A.EEagerBinop op v1 v2 ->
-      convertValue
-        v1
-        ( \v1' ->
-            convertValue
-              v2
-              ( \v2' ->
-                  return $ C.EEagerBinop op v1' v2'
-              )
+      runContT
+        ( do
+            v1' <- convertValue v1
+            v2' <- convertValue v2
+            return $ C.EEagerBinop op v1' v2'
         )
+        return
     A.EShortCircBinop op e1 e2 ->
       C.EShortCircBinop op <$> convertExpr e1 <*> convertExpr e2
     A.EApp v1 v2 ->
-      convertValue
-        v1
-        ( \v1' ->
-            convertValue
-              v2
-              ( \v2' -> do
-                  let codeName = "_code"
-                      rawCloName = "_raw_clo"
-                  return $
-                    buildLetExpr
-                      [ (codeName, C.EFetch v1' 0),
-                        (rawCloName, C.ECast voidPointer v1')
-                      ]
-                      ( C.EApp
-                          (C.VLocalVar codeName)
-                          [C.VLocalVar rawCloName, v2']
-                      )
-              )
+      runContT
+        ( do
+            v1' <- convertValue v1
+            v2' <- convertValue v2
+            let codeName = "_code"
+                rawCloName = "_raw_clo"
+            return $
+              buildLetExpr
+                [ (codeName, C.EFetch v1' 0),
+                  (rawCloName, C.ECast voidPointer v1')
+                ]
+                ( C.EApp
+                    (C.VLocalVar codeName)
+                    [C.VLocalVar rawCloName, v2']
+                )
         )
+        return
     A.ESwitch v cs ->
-      convertValue
-        v
-        ( \v' -> do
+      runContT
+        ( do
+            v' <- convertValue v
             let (tags, es) = unzip cs
-            es' <- mapM convertExpr es
+            es' <- lift $ mapM convertExpr es
             return $ C.ESwitch v' (zip tags es')
         )
+        return
     A.EMatchSeq e1 e2 -> C.EMatchSeq <$> convertExpr e1 <*> convertExpr e2
     A.EMatchError -> return C.EMatchError
     A.EMakeRecord ts vs -> do
       (r, r') <- M.freshVar "r"
-      convertValues
-        vs
-        ( \vs' ->
+      runContT
+        ( do
+            vs' <- convertValues vs
             return $
               buildLetExpr
                 [(r, C.EAllocRecord $ C.TStruct $ map convertType ts)]
@@ -174,18 +174,21 @@ convertExpr e =
                     (C.EValue r')
                 )
         )
+        return
     A.EFetch v i ->
-      convertValue
-        v
-        ( \v' ->
+      runContT
+        ( do
+            v' <- convertValue v
             return $ C.EFetch v' i
         )
+        return
     A.ECast t v ->
-      convertValue
-        v
-        ( \v' ->
+      runContT
+        ( do
+            v' <- convertValue v
             return $ C.ECast (convertType t) v'
         )
+        return
     A.EIf e1 e2 e3 -> C.EIf <$> convertExpr e1 <*> convertExpr e2 <*> convertExpr e3
 
 collectBinder :: A.VarInfo -> WriterT [(M.EnvIndex, A.Type)] M.ClosureConv ()
