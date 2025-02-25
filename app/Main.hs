@@ -14,7 +14,8 @@ data Options = Options
   { srcPath :: String,
     dstPath :: Maybe String,
     dumpCore :: Bool,
-    emitLLVM :: Bool
+    emitLLVM :: Bool,
+    optimize :: Bool
   }
 
 optionsParser :: Parser Options
@@ -39,6 +40,10 @@ optionsParser =
     <*> switch
       ( long "emit-llvm"
           <> help "Emit LLVM IR instead of executable"
+      )
+    <*> switch
+      ( short 'O'
+          <> help "Enable LLVM optimizations (passes -O2 to opt-14)"
       )
 
 optionsInfo :: ParserInfo Options
@@ -65,9 +70,12 @@ main = do
           defaultOutput = if emitLLVM opts then "a.ll" else "a.out"
           outputPath = fromMaybe defaultOutput $ dstPath opts
       if emitLLVM opts
-        then writeFile outputPath llvmSource
+        then do
+          writeFile outputPath llvmSource
+          if optimize opts then callProcess "opt-14" ["-O2", "-S", outputPath, "-o", outputPath] else return ()
         else do
           let tmpFile = "tmp.ll"
           writeFile tmpFile llvmSource
+          if optimize opts then callProcess "opt-14" ["-O2", "-S", tmpFile, "-o", tmpFile] else return ()
           callProcess "clang" [tmpFile, "runtime.c", "-o", outputPath]
           removeFile tmpFile

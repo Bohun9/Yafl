@@ -1,0 +1,9 @@
+*.cmi
+*.cmo
+*.cmx
+*.hi
+*.o
+*_hs
+*_ml
+*_yafl
+*_opt
